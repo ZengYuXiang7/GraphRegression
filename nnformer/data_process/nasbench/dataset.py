@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 
 import random
 import time
-
+import os
 
 def _to_tensor(x, dtype):
     if torch.is_tensor(x):
@@ -25,6 +25,7 @@ class NasbenchDataset(Dataset):
         self.consistency = lbd_consistency
         self.data_path = data_path
         self.percent = percent
+        self.cache_dir = f"./data/{dataset}/{dataset}" # Cache directory
 
         t0 = time.time()
         logger.info(f"Building dataset {self.part} from .pth file")
@@ -42,9 +43,16 @@ class NasbenchDataset(Dataset):
             )
 
     def _load(self):
+        # Check if cached data exists
+        cache_file = os.path.join(self.cache_dir, f"{self.part}_{self.percent}_cached_data.pth")
+        if os.path.exists(cache_file):
+            # If cache file exists, load it
+            print(f"Loading cached data from {cache_file}")
+            return torch.load(cache_file)
+
+        # If cache file does not exist, process data
         data_file = self.data_path
         datas = [torch.load(data_file, weights_only=True)]
-
         loaded_data = []
         data_num = (int(self.percent) if self.percent > 1 else int(len(datas[0]) * self.percent))
 
@@ -54,21 +62,21 @@ class NasbenchDataset(Dataset):
             keys = list(range(data_num, data_num + 1024))
         elif self.part == "test":
             keys = list(range(len(datas[0])))  # test all
-            # keys = list(range(data_num + 1024, data_num+2048)) # test 1024
-            # keys = list(range(data_num + 1024, len(datas[0]))) # test rest
 
         for key in keys:
-            # use consistency loss
             if self.part == "train" and self.consistency > 0:
                 loaded_data.append([datas[0][key], datas[0][key]])
-
-            # no consistency loss, val and test
             elif (
-                (self.part == "train" and self.consistency == 0.0)
-                or self.part == "val"
-                or self.part == "test"
+                    (self.part == "train" and self.consistency == 0.0)
+                    or self.part == "val"
+                    or self.part == "test"
             ):
                 loaded_data.append(datas[0][key])
+
+        # Cache the processed data
+        os.makedirs(self.cache_dir, exist_ok=True)
+        torch.save(loaded_data, cache_file)
+        print(f"Data cached to {cache_file}")
 
         return loaded_data
 

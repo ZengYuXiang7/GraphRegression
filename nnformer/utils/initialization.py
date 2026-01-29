@@ -44,9 +44,8 @@ def init_layers(args, logger):
     loss = NARLoss(args.lambda_mse, args.lambda_rank, args.lambda_consistency)
     model_info(net, logger)
 
-    if torch.cuda.is_available():
-        net = net.cuda(args.device)
-        loss = loss.cuda(args.device)
+    net = net.to(args.device)
+    loss = loss.to(args.device)
 
     # Model EMA
     if args.model_ema:
@@ -113,7 +112,7 @@ def auto_load_model(args, model, model_ema=None, optimizer=None, scheduler=None)
 
     if args.pretrained_path:
         checkpoint = torch.load(
-            args.pretrained_path, map_location="cuda:{}".format(args.device)
+            args.pretrained_path, map_location="{}".format(args.device)
         )
         if "state_dict_ema" in checkpoint.keys():
             model.load_state_dict(checkpoint["state_dict_ema"])
@@ -125,6 +124,6 @@ def auto_load_model(args, model, model_ema=None, optimizer=None, scheduler=None)
             model.load_state_dict(pretrained_dict)
         print(
             torch.load(
-                args.pretrained_path, map_location="cuda:{}".format(args.device)
+                args.pretrained_path, map_location="{}".format(args.device)
             )["config"]
         )

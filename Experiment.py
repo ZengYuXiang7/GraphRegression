@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rounds", default=1, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
-    parser.add_argument("--model", default="nnformer", type=str)
+    parser.add_argument("--model", default="model43", type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
     return args, unknown_args

@@ -30,6 +30,7 @@ def train(config, logger):
     n_batches = len(train_loader)
     # Init Model
     net, model_ema, criterion = init_layers(config, logger)
+
     # Optimizer
     optimizer, scheduler = init_optim(config, net, n_batches)
     # Auto Resume
@@ -47,7 +48,8 @@ def train(config, logger):
 
         net.train()
         for batch_idx, batch_data in enumerate(train_loader):
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             optimizer.zero_grad()
             if "nasbench" in config.dataset:
@@ -235,6 +237,7 @@ def infer(dataloader, net, dataset, device=None, isTest=False):
         acc, err, tau = metric.get()
     return acc, err, tau
 
+
 def eval_with_loader(config, logger, test_loader, *, pretrained_path=None, isTest=False):
     # 构建模型
     net = init_layers(config, logger)
@@ -272,9 +275,15 @@ def run_exp(runid, config):
     logname = os.path.join(args.save_path, f"{logname}.log")
     logger = setup_logger(logname)
 
-    print("Totally", torch.cuda.device_count(), "GPUs are available.")
-    torch.cuda.set_device(args.device)
-    print("Device:", args.device, "Name:", torch.cuda.get_device_name(args.device))
+    if torch.cuda.is_available():
+        print("Totally", torch.cuda.device_count(), "GPUs are available.")
+        torch.cuda.set_device(args.device)
+        print("Device:", args.device, "Name:", torch.cuda.get_device_name(args.device))
+    else:
+        args.n_workers = 1
+        if args.device != 'mps':
+            args.device = 'cpu'
+
 
     # 1) 训练（可选）
     if args.do_train:
