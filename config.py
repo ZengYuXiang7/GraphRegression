@@ -147,18 +147,11 @@ def parse_args():
     parser.add_argument("--print_freq", type=int, default=1000)
 
     # EMA
-    parser.add_argument("--model_ema", type=bool, default=True)
+    parser.add_argument("--model_ema", type=bool, default=False)
     parser.add_argument("--model_ema_decay", type=float, default=0.99)
     parser.add_argument("--model_ema_force_cpu", type=bool, default=True, help="")
     parser.add_argument("--model_ema_eval", type=bool, default=True, help="Using ema to eval during training.", )
 
-    # Loss Parameters
-    parser.add_argument(
-        "--lambda_mse",
-        type=float,
-        default=1.0,
-        help='weight of mse loss (default: "1.0")',
-    )
 
 
 
@@ -196,6 +189,19 @@ def parse_args():
     parser.add_argument("--graph_n_head", type=int, default=4)
     parser.add_argument("--depths", nargs="+", type=int, default=[12])
     parser.add_argument(
+        "--avg_tokens",
+        action="store_true",
+        help="Whether average the tokens of embedding to predict",
+    )
+
+    # Loss Parameters
+    parser.add_argument(
+        "--lambda_mse",
+        type=float,
+        default=1.0,
+        help='weight of mse loss (default: "1.0")',
+    )
+    parser.add_argument(
         "--lambda_rank",
         type=float,
         default=0.2,
@@ -210,15 +216,10 @@ def parse_args():
 
     # Head
     parser.add_argument("--d_model", type=int, default=192)
-    parser.add_argument("--use_ffn", type=int, default=1)
+    parser.add_argument("--use_head", type=int, default=0)
     parser.add_argument("--gcn_layers", type=int, default=3)
     parser.add_argument("--tf_layers", type=int, default=3)
 
-    parser.add_argument(
-        "--avg_tokens",
-        action="store_true",
-        help="Whether average the tokens of embedding to predict",
-    )
 
     parser.add_argument("--do_train", type=bool, default=True)
     parser.add_argument("--model", type=str, default="nnformer")
@@ -229,11 +230,12 @@ def parse_args():
         default=100,
         help="trainings samples, percent or numbers",
     )
-    parser.add_argument("--device", type=str, default='cpu')
+    parser.add_argument("--device", type=str, default='mps')
     # Evalutation
     parser.add_argument(
         "--test_freq", type=int, default=1, help='Test frequency (default: "1")'
     )
+    parser.add_argument("--tqdm", default=0, type=int, help="use tqdm for training progress bar")
 
     # args = parser.parse_args()
     args, unknown_args = parser.parse_known_args()

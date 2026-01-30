@@ -113,26 +113,6 @@ def train(config, logger):
                     config.dataset + "_model_best.pth.tar",
                 )
 
-            if config.model_ema and config.model_ema_eval:
-                acc_ema, err_ema, tau_ema = infer(
-                    val_loader, model_ema.ema, config.dataset, config.device
-                )
-                if tau_ema > best_tau_ema:
-                    best_mape_ema, best_error_ema, best_tau_ema = (
-                        acc_ema,
-                        err_ema,
-                        tau_ema,
-                    )
-                    save_check_point(
-                        epoch_idx + 1,
-                        batch_idx + 1,
-                        config,
-                        get_state_dict(model_ema),
-                        None,
-                        None,
-                        False,
-                        config.dataset + "_model_best_ema.pth.tar",
-                    )
 
             if (epoch_idx + 1) % config.print_freq == 0:
                 logger.info(
@@ -154,21 +134,15 @@ def train(config, logger):
                 )
 
                 logger.info(
-                    "CheckPoint_TEST: KT {:.5f}, Best_KT {:.5f}, EMA_KT {:.5f}, Best_EMA_KT {:.5f} "
-                    "MAPE {:.5f}, Best_MAPE {:.5f}, EMA_MAPE {:.5f}, Best_EMA_MAPE {:.5f}, "
-                    "ErrBnd(0.01) {:.5f}, Best_ErrB {:.5f}, EMA_ErrBnd(0.01) {:.5f}, Best_EMA_ErrB {:.5f}, ".format(
+                    "CheckPoint_TEST: KT {:.5f}, Best_KT {:.5f}, "
+                    "MAPE {:.5f}, Best_MAPE {:.5f}, "
+                    "ErrBnd(0.01) {:.5f}, Best_ErrB {:.5f}".format(
                         tau,
                         best_tau,
-                        tau_ema,
-                        best_tau_ema,
                         acc,
                         best_mape,
-                        acc_ema,
-                        best_mape_ema,
                         err,
                         best_error,
-                        err_ema,
-                        best_error_ema,
                     )
                 )
 
@@ -196,12 +170,8 @@ def train(config, logger):
         )
     logger.info(
         f"Training Finished! Best MAPE: {best_mape:11.8f}, "
-        f"Best MAPE on EMA: {best_mape_ema:11.8f}, "
-        f"Best ErrBnd(0.01): {best_error:11.8f}; "
-        f"Best ErrBond(0.05) on EMA: {best_error_ema:11.8f}"
-    )
-    logger.info(
-        f"CheckPoint_TEST: Best_KT {best_tau:.5f}, Best_EMA_KT {best_tau_ema:.5f}"
+        f"Best ErrBnd(0.01): {best_error:11.8f}; \n"
+        f"CheckPoint_TEST: Best_KT {best_tau:.5f}"
     )
 
 @torch.no_grad()
@@ -249,6 +219,8 @@ def eval_with_loader(config, logger, test_loader, *, pretrained_path=None, isTes
 
     auto_load_model(config, net)
 
+    net = net.to(config.device)
+
     # 还原
     if pretrained_path is not None:
         config.pretrained_path = old
@@ -277,13 +249,10 @@ def run_exp(runid, config):
 
     if torch.cuda.is_available():
         print("Totally", torch.cuda.device_count(), "GPUs are available.")
-        torch.cuda.set_device(args.device)
-        print("Device:", args.device, "Name:", torch.cuda.get_device_name(args.device))
     else:
         args.n_workers = 1
         if args.device != 'mps':
             args.device = 'cpu'
-
 
     # 1) 训练（可选）
     if args.do_train:
@@ -297,7 +266,6 @@ def run_exp(runid, config):
 
     # 3) 跑两个 ckpt：best 和 best_ema
     best_ckpt = os.path.join(output_dir, "nasbench101_model_best.pth.tar")
-    ema_ckpt  = os.path.join(output_dir, "nasbench101_model_best_ema.pth.tar")
 
     # base
     if os.path.isfile(best_ckpt):
@@ -306,26 +274,14 @@ def run_exp(runid, config):
         acc = err = tau = None
         logger.warning(f"[WARN] best ckpt not found: {best_ckpt}")
 
-    # ema
-    if os.path.isfile(ema_ckpt):
-        acc_ema, err_ema, tau_ema = eval_with_loader(args, logger, test_loader, pretrained_path=ema_ckpt, isTest=False)
-    else:
-        acc_ema = err_ema = tau_ema = None
-        logger.warning(f"[WARN] ema ckpt not found: {ema_ckpt}")
-
     # 日志
     if tau is not None:
         logger.info(f"[EVAL-best]     KT {tau:8.5f}, MAPE {acc:8.5f}, ErrBnd(0.01) {err:8.5f}")
-    if tau_ema is not None:
-        logger.info(f"[EVAL-best_ema] KT {tau_ema:8.5f}, MAPE {acc_ema:8.5f}, ErrBnd(0.01) {err_ema:8.5f}")
 
     return {
         "Tau": tau,
         "MAPE": acc,
         "ErrBnd": err,
-        "Tau_EMA": tau_ema,
-        "MAPE_EMA": acc_ema,
-        "ErrBnd_EMA": err_ema,
     }
 
 

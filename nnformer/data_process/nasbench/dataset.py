@@ -25,7 +25,7 @@ class NasbenchDataset(Dataset):
         self.consistency = lbd_consistency
         self.data_path = data_path
         self.percent = percent
-        self.cache_dir = f"./data/{dataset}/{dataset}" # Cache directory
+        self.cache_dir = f"./data/{dataset}/{dataset}_{lbd_consistency}" # Cache directory
 
         t0 = time.time()
         logger.info(f"Building dataset {self.part} from .pth file")

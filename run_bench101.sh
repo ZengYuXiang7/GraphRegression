@@ -6,16 +6,10 @@
 #python generate_data.py
 
 #model_version="nnformer"
-model_version="model41"
-
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 100
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 172
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 424
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 4236
-
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 100
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 172
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 424
-#python Experiment.py --model $model_version --dataset nasbench101 --percent 4236
+model_version="brpnas"
+python Experiment.py --model $model_version --dataset nasbench101 --percent 100
+python Experiment.py --model $model_version --dataset nasbench101 --percent 172
+python Experiment.py --model $model_version --dataset nasbench101 --percent 424
+python Experiment.py --model $model_version --dataset nasbench101 --percent 4236
 
 
