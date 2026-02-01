@@ -33,13 +33,21 @@ model_version="model44"
 #python Experiment.py --model $model_version --dataset nasbench101 --d_model 160 --gcn_layers 3 --graph_readout cls --print_freq 1000 --use_ffn 0
 #python Experiment.py --model $model_version --dataset nasbench101 --d_model 160 --gcn_layers 3 --graph_readout sum --print_freq 1000 --use_ffn 0
 
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 6 --graph_readout cls --print_freq 50 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 6 --graph_readout sum --print_freq 50 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 6 --graph_readout cls --print_freq 50 --device mps --use_head 1
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 6 --graph_readout cls --print_freq 50 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 6 --graph_readout sum --print_freq 50 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 6 --graph_readout cls --print_freq 50 --device mps --use_head 1
+#
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 1 --graph_readout cls --print_freq 1500 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 2 --graph_readout cls --print_freq 1500 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 3 --graph_readout cls --print_freq 1500 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 5 --graph_readout cls --print_freq 1500 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 9 --graph_readout cls --print_freq 1500 --device mps
+#python Experiment.py --model $model_version --d_model 160 --gcn_layers 12 --graph_readout cls --print_freq 1500 --device mps
 
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 1 --graph_readout cls --print_freq 1500 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 2 --graph_readout cls --print_freq 1500 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 3 --graph_readout cls --print_freq 1500 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 5 --graph_readout cls --print_freq 1500 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 9 --graph_readout cls --print_freq 1500 --device mps
-python Experiment.py --model $model_version --d_model 160 --gcn_layers 12 --graph_readout cls --print_freq 1500 --device mps
+model_version="model45"
+#python Experiment.py --model $model_version --percent 100  --print_freq 50 --device mps
+
+
+
+model_version="model46"
+python Experiment.py --model $model_version --percent 100  --print_freq 1000 --device mps

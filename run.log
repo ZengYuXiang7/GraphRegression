@@ -874,3 +874,171 @@
 
 
 
+[2026-01-30 20:00:29] ********************Experiment Results********************
+[2026-01-30 20:00:29] log Filename: dataset__nasbench101|model__brpnas|debug__0|lambdaconsistency__0|lambdarank__0|percent__100
+[2026-01-30 20:00:29] Experiment Detail: dataset : nasbench101, model : brpnas, debug : 0, lambda_consistency : 0, lambda_rank : 0, percent : 100
+[2026-01-30 20:00:29] ------------------------------------------------------------
+[2026-01-30 20:00:29] Tau       : 0.5070 ± 0.0000
+[2026-01-30 20:00:29] MAPE      : 0.0387 ± 0.0000
+[2026-01-30 20:00:29] ErrBnd    : 0.4654 ± 0.0000
+[2026-01-30 20:00:29] ********************Experiment Success********************
+
+
+[2026-01-30 20:12:45] ********************Experiment Results********************
+[2026-01-30 20:12:45] log Filename: dataset__nasbench101|model__brpnas|debug__0|lambdaconsistency__0|lambdarank__0|percent__172
+[2026-01-30 20:12:45] Experiment Detail: dataset : nasbench101, model : brpnas, debug : 0, lambda_consistency : 0, lambda_rank : 0, percent : 172
+[2026-01-30 20:12:45] ------------------------------------------------------------
+[2026-01-30 20:12:45] Tau       : 0.5569 ± 0.0000
+[2026-01-30 20:12:45] MAPE      : 0.0379 ± 0.0000
+[2026-01-30 20:12:45] ErrBnd    : 0.4856 ± 0.0000
+[2026-01-30 20:12:45] ********************Experiment Success********************
+
+
+[2026-01-30 20:26:00] ********************Experiment Results********************
+[2026-01-30 20:26:00] log Filename: dataset__nasbench101|model__brpnas|debug__0|lambdaconsistency__0|lambdarank__0|percent__424
+[2026-01-30 20:26:00] Experiment Detail: dataset : nasbench101, model : brpnas, debug : 0, lambda_consistency : 0, lambda_rank : 0, percent : 424
+[2026-01-30 20:26:00] ------------------------------------------------------------
+[2026-01-30 20:26:00] Tau       : 0.5924 ± 0.0000
+[2026-01-30 20:26:00] MAPE      : 0.0363 ± 0.0000
+[2026-01-30 20:26:00] ErrBnd    : 0.5485 ± 0.0000
+[2026-01-30 20:26:00] ********************Experiment Success********************
+
+
+[2026-01-30 20:59:12] ********************Experiment Results********************
+[2026-01-30 20:59:12] log Filename: dataset__nasbench101|model__brpnas|debug__0|lambdaconsistency__0|lambdarank__0|percent__4236
+[2026-01-30 20:59:12] Experiment Detail: dataset : nasbench101, model : brpnas, debug : 0, lambda_consistency : 0, lambda_rank : 0, percent : 4236
+[2026-01-30 20:59:12] ------------------------------------------------------------
+[2026-01-30 20:59:12] Tau       : 0.7399 ± 0.0000
+[2026-01-30 20:59:12] MAPE      : 0.0268 ± 0.0000
+[2026-01-30 20:59:12] ErrBnd    : 0.7106 ± 0.0000
+[2026-01-30 20:59:12] ********************Experiment Success********************
+
+
+
+
+
+
+
+
+
+
+
+
+[2026-01-31 15:13:56] ********************Experiment Results********************
+[2026-01-31 15:13:56] log Filename: dataset__nasbench101|model__model45|dmodel__160|debug__0|device__mps|gcnlayers__6|graphreadout__cls|printfreq__50
+[2026-01-31 15:13:56] Experiment Detail: dataset : nasbench101, model : model45, d_model : 160, debug : 0, device : mps, gcn_layers : 6, graph_readout : cls, print_freq : 50
+[2026-01-31 15:13:56] ------------------------------------------------------------
+[2026-01-31 15:13:56] Tau       : 0.5933 ± 0.0000
+[2026-01-31 15:13:56] MAPE      : 0.0371 ± 0.0000
+[2026-01-31 15:13:56] ErrBnd    : 0.3439 ± 0.0000
+[2026-01-31 15:13:56] ********************Experiment Success********************
+
+
+
+
+[2026-01-31 16:09:16] ********************Experiment Results********************
+[2026-01-31 16:09:16] log Filename: dataset__nasbench101|model__model45|debug__0|percent__172
+[2026-01-31 16:09:16] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, percent : 172
+[2026-01-31 16:09:16] ------------------------------------------------------------
+[2026-01-31 16:09:16] Tau       : 0.5833 ± 0.0000
+[2026-01-31 16:09:16] MAPE      : 0.0383 ± 0.0000
+[2026-01-31 16:09:16] ErrBnd    : 0.3568 ± 0.0000
+[2026-01-31 16:09:16] ********************Experiment Success********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[2026-01-31 16:54:36] ********************Experiment Results********************
+[2026-01-31 16:54:36] log Filename: dataset__nasbench101|model__model45|debug__0|device__mps|percent__100|printfreq__50
+[2026-01-31 16:54:36] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : mps, percent : 100, print_freq : 50
+[2026-01-31 16:54:36] ------------------------------------------------------------
+[2026-01-31 16:54:36] Tau       : 0.5144 ± 0.0000
+[2026-01-31 16:54:36] MAPE      : 0.0806 ± 0.0000
+[2026-01-31 16:54:36] ErrBnd    : 0.0162 ± 0.0000
+[2026-01-31 16:54:36] ********************Experiment Success********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[2026-01-31 18:57:33] ********************Experiment Results********************
+[2026-01-31 18:57:33] log Filename: dataset__nasbench101|model__model45|debug__0|device__mps|percent__100|printfreq__50
+[2026-01-31 18:57:33] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : mps, percent : 100, print_freq : 50
+[2026-01-31 18:57:33] ------------------------------------------------------------
+[2026-01-31 18:57:33] Tau       : 0.6775 ± 0.0000
+[2026-01-31 18:57:33] MAPE      : 0.0337 ± 0.0000
+[2026-01-31 18:57:33] ErrBnd    : 0.5915 ± 0.0000
+[2026-01-31 18:57:33] ********************Experiment Success********************
+
+
+[2026-01-31 20:18:46] ********************Experiment Results********************
+[2026-01-31 20:18:46] log Filename: dataset__nasbench101|model__model45|debug__0|device__mps|percent__100|printfreq__50
+[2026-01-31 20:18:46] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : mps, percent : 100, print_freq : 50
+[2026-01-31 20:18:46] ------------------------------------------------------------
+[2026-01-31 20:18:46] Tau       : 0.6096 ± 0.0000
+[2026-01-31 20:18:46] MAPE      : 0.0343 ± 0.0000
+[2026-01-31 20:18:46] ErrBnd    : 0.5420 ± 0.0000
+[2026-01-31 20:18:46] ********************Experiment Success********************
+
+
+
+
+
+
+[2026-01-31 20:52:36] ********************Experiment Results********************
+[2026-01-31 20:52:36] log Filename: dataset__nasbench101|model__model46|debug__0|device__mps|percent__100|printfreq__1000
+[2026-01-31 20:52:36] Experiment Detail: dataset : nasbench101, model : model46, debug : 0, device : mps, percent : 100, print_freq : 1000
+[2026-01-31 20:52:36] ------------------------------------------------------------
+[2026-01-31 20:52:36] Tau       : 0.5174 ± 0.0000
+[2026-01-31 20:52:36] MAPE      : 0.0625 ± 0.0000
+[2026-01-31 20:52:36] ErrBnd    : 0.1416 ± 0.0000
+[2026-01-31 20:52:36] ********************Experiment Success********************

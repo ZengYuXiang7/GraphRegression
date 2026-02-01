@@ -356,6 +356,8 @@ class NNFormer(nn.Module):
     ):
         super().__init__()
 
+        # in_chans = 5
+        self.num_node_features = in_chans
         self.op_embed = nn.Linear(in_chans, dim, False)
         self.depth_embed = nn.Linear(in_chans, dim, False) if depth_embed else None
         self.cls_token = nn.Parameter(torch.zeros(1, 1, dim)) if class_token else None
@@ -394,11 +396,16 @@ class NNFormer(nn.Module):
     def forward(self, sample, static_feats) -> Tensor:
         # Original Encodings
         seqcode = sample["code"]
+
+        # seqcode = sample['ops'].long()
+        # seqcode = F.one_hot(seqcode, num_classes=self.num_node_features).float()
+
         depth = sample["code_depth"]
         rel_pos = sample["code_rel_pos"]
         adj = sample["code_adj"]
 
         seqcode = self.op_embed(seqcode)
+
         if self.cls_token is not None:
             seqcode = torch.cat(
                 [self.cls_token.expand(seqcode.shape[0], -1, -1), seqcode], dim=1
@@ -413,6 +420,7 @@ class NNFormer(nn.Module):
             )
             new_rel_pos[:, 1:, 1:] = rel_pos
             rel_pos = new_rel_pos
+
         if self.depth_embed is not None:
             seqcode = torch.cat([seqcode, self.depth_embed(depth)], dim=1)
             new_adj = torch.zeros(

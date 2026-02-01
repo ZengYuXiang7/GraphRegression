@@ -52,7 +52,7 @@ class NasbenchDataset(Dataset):
 
         # If cache file does not exist, process data
         data_file = self.data_path
-        datas = [torch.load(data_file, weights_only=True)]
+        datas = [torch.load(data_file)]
         loaded_data = []
         data_num = (int(self.percent) if self.percent > 1 else int(len(datas[0]) * self.percent))
 
@@ -103,6 +103,10 @@ class NasbenchDataset(Dataset):
         code_depth = _to_tensor(data["code_depth"], torch.float32)
         val_acc_avg = _to_tensor([data["validation_accuracy"]], torch.float32)
         test_acc_avg = _to_tensor([data["test_accuracy"]], torch.float32)
+
+        op_depth = _to_tensor(data["op_depth"], torch.float32)
+
+        # (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8))
         return {
             "ops": ops,
             "code": code,
@@ -111,6 +115,9 @@ class NasbenchDataset(Dataset):
             "code_depth": code_depth,
             "val_acc_avg": val_acc_avg,
             "test_acc_avg": test_acc_avg,
+
+            # 2026年01月31日17:25:03
+            "op_depth": op_depth,
         }
 
     def preprocess_201(self, data):

@@ -39,6 +39,32 @@ def parse_args():
     return args
 
 
+
+import numpy as np
+from collections import deque
+
+def bfs_depth_from_start(adj: np.ndarray, start: int = 0) -> np.ndarray:
+    """
+    adj: [N, N] numpy array (0/1), directed by default (u->v if adj[u,v]==1)
+    start: 起点节点编号
+    return: depth [N], start=0 depth=0, unreachable=-1
+    """
+    adj = np.asarray(adj)
+    N = adj.shape[0]
+    depth = np.full(N, -1, dtype=np.int32)
+    depth[start] = 0
+
+    q = deque([start])
+    while q:
+        u = q.popleft()
+        # 找到 u 的所有出邻居
+        nbrs = np.where(adj[u] != 0)[0]
+        for v in nbrs:
+            if depth[v] == -1:
+                depth[v] = depth[u] + 1
+                q.append(v)
+    return depth
+
 def get_nasbench101_item(archs, i: int, enc_dim, embed_type):
     index = str(i)
     ops = archs[index]["module_operations"]
@@ -54,6 +80,7 @@ def get_nasbench101_item(archs, i: int, enc_dim, embed_type):
         "code": code,
         "code_rel_pos": rel_pos,
         "code_depth": code_depth,
+        "op_depth": bfs_depth_from_start(adj),
     }
 
 

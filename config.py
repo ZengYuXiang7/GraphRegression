@@ -204,22 +204,22 @@ def parse_args():
     parser.add_argument(
         "--lambda_rank",
         type=float,
-        default=0.2,
+        default=0,
         help='weight of ranking loss (default: "0.2")',
     )
     parser.add_argument(
         "--lambda_consistency",
         type=float,
-        default=1.0,
+        default=0,
         help="weight of consistency loss",
     )
 
     # Head
-    parser.add_argument("--d_model", type=int, default=192)
+    parser.add_argument("--d_model", type=int, default=160)
     parser.add_argument("--use_head", type=int, default=0)
-    parser.add_argument("--gcn_layers", type=int, default=3)
+    parser.add_argument("--gcn_layers", type=int, default=4)
     parser.add_argument("--tf_layers", type=int, default=3)
-
+    parser.add_argument("--graph_readout", type=str, default='cls')
 
     parser.add_argument("--do_train", type=bool, default=True)
     parser.add_argument("--model", type=str, default="nnformer")

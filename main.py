@@ -5,6 +5,7 @@ import random
 import numpy as np
 from timm.utils import get_state_dict
 
+from losses import RankLossPack
 from nnformer.utils import *
 from config import parse_args
 from nnformer.data_process import init_dataloader
@@ -40,7 +41,8 @@ def train(config, logger):
     best_tau, best_mape, best_error = -99, 1e5, 0
     if config.model_ema and config.model_ema_eval:
         best_tau_ema, best_mape_ema, best_error_ema = -99, 1e5, 0
-        
+
+    rank_loss_function = RankLossPack(config)
     # 4000
     for epoch_idx in trange(start_epoch_idx, config.epochs):
         metric = Metric()
@@ -79,6 +81,9 @@ def train(config, logger):
 
             loss_dict = criterion(logits, gt)
             loss = loss_dict["loss"]
+
+            rank_loss = rank_loss_function(logits, gt)
+            loss += rank_loss
 
             loss.backward()
             optimizer.step()
