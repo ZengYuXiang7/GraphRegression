@@ -1,6 +1,8 @@
 # coding : utf-8
 # Author : Yuxiang Zeng
 import os
+import sys
+import shutil
 import torch
 import random
 import time
@@ -15,23 +17,41 @@ torch.set_default_dtype(torch.float32)
 
 # 在这里写下任何实验模板所产生的metrics
 def RunOnce(runid, config):
+    remove_pycache_dirs()
     # 这里写单次实验的代码
     # results = {"accuracy": random.random(), "mape": random.random()}
-    results = run_exp(
-        runid=runid,
-        config=config )
+    results = run_exp(runid=runid, config=config)
     return results
 
 
 def build_parser() -> argparse.ArgumentParser:
     """只负责声明已知参数"""
     parser = argparse.ArgumentParser()
+    default_device = "mps" if sys.platform == "darwin" else "cuda"
     parser.add_argument("--rounds", default=1, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
     parser.add_argument("--model", default="model45", type=str)
+    parser.add_argument("--device", default=default_device, type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
     return args, unknown_args
+
+
+def remove_pycache_dirs(project_root=None):
+    root = project_root or os.path.dirname(os.path.abspath(__file__))
+    removed = []
+    for current_root, dirnames, _ in os.walk(root, topdown=True):
+        pycache_paths = [
+            os.path.join(current_root, name)
+            for name in dirnames
+            if name == "__pycache__"
+        ]
+        for path in pycache_paths:
+            shutil.rmtree(path, ignore_errors=True)
+            removed.append(path)
+        if pycache_paths:
+            dirnames[:] = [d for d in dirnames if d != "__pycache__"]
+    return removed
 
 
 def inject_unknown_args(
@@ -129,6 +149,8 @@ def log(message, logfile="run.log"):
     return True
 
 
+
+
 # 保存结果到pickle文件
 def save_result(metrics, log_filename, config):
     os.makedirs("./results/metrics/", exist_ok=True)
@@ -155,6 +177,7 @@ def set_seed(seed):
     os.environ["PYTHONHASHSEED"] = str(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    return True
 
 
 def RunExperiments(config):
@@ -181,7 +204,6 @@ def RunExperiments(config):
     save_result(metrics, log_filename, config)
     log("*" * 20 + "Experiment Success" + "*" * 20)
     return metrics
-
 
 
 def merge_config_into_args(
