@@ -144,16 +144,13 @@ def parse_args():
 
     parser.add_argument("--pretrained_path", type=str, default=None)  # test
 
-    parser.add_argument("--print_freq", type=int, default=1000)
-
-    # EMA
-    parser.add_argument("--model_ema", type=bool, default=False)
-    parser.add_argument("--model_ema_decay", type=float, default=0.99)
-    parser.add_argument("--model_ema_force_cpu", type=bool, default=True, help="")
-    parser.add_argument("--model_ema_eval", type=bool, default=True, help="Using ema to eval during training.", )
-
-
-
+    parser.add_argument("--print_freq", type=int, default=10000)
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=1500,
+        help="early stopping patience, <=0 disables",
+    )
 
     # Network Settings
     # Encoding
@@ -171,13 +168,21 @@ def parse_args():
     )
     parser.add_argument(
         "--class_token",
-        type=bool, default=True,
+        type=bool,
+        default=True,
         help="Whether use the class token to predict",
     )
     parser.add_argument(
         "--depth_embed",
         type=bool,
-        help="Whether use the depth embedding to predict", default=True,
+        help="Whether use the depth embedding to predict",
+        default=True,
+    )
+    parser.add_argument(
+        "--encoder_type",
+        type=str,
+        default="nn",
+        help="encoder type for model47: nn|transformer",
     )
     parser.add_argument(
         "--enc_dim", type=int, default=96, help="Operations encoding dim"
@@ -186,7 +191,7 @@ def parse_args():
     parser.add_argument("--graph_d_model", type=int, default=160)
     parser.add_argument("--graph_d_ff", type=int, default=640)
 
-    parser.add_argument("--graph_n_head", type=int, default=4)
+    parser.add_argument("--graph_n_head", type=int, default=1)
     parser.add_argument("--depths", nargs="+", type=int, default=[12])
     parser.add_argument(
         "--avg_tokens",
@@ -204,13 +209,13 @@ def parse_args():
     parser.add_argument(
         "--lambda_rank",
         type=float,
-        default=0,
+        default=0.2,
         help='weight of ranking loss (default: "0.2")',
     )
     parser.add_argument(
         "--lambda_consistency",
         type=float,
-        default=0,
+        default=1.0,
         help="weight of consistency loss",
     )
 
@@ -219,7 +224,7 @@ def parse_args():
     parser.add_argument("--use_head", type=int, default=0)
     parser.add_argument("--gcn_layers", type=int, default=4)
     parser.add_argument("--tf_layers", type=int, default=3)
-    parser.add_argument("--graph_readout", type=str, default='cls')
+    parser.add_argument("--graph_readout", type=str, default="cls")
 
     parser.add_argument("--do_train", type=bool, default=True)
     parser.add_argument("--model", type=str, default="nnformer")
@@ -230,12 +235,14 @@ def parse_args():
         default=100,
         help="trainings samples, percent or numbers",
     )
-    parser.add_argument("--device", type=str, default='mps')
+    parser.add_argument("--device", type=str, default="cuda")
     # Evalutation
     parser.add_argument(
         "--test_freq", type=int, default=1, help='Test frequency (default: "1")'
     )
-    parser.add_argument("--tqdm", default=0, type=int, help="use tqdm for training progress bar")
+    parser.add_argument(
+        "--tqdm", default=1, type=int, help="use tqdm for training progress bar"
+    )
 
     # args = parser.parse_args()
     args, unknown_args = parser.parse_known_args()

@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     default_device = "mps" if sys.platform == "darwin" else "cuda"
     parser.add_argument("--rounds", default=1, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
-    parser.add_argument("--model", default="model45", type=str)
+    parser.add_argument("--model", default="model47", type=str)
     parser.add_argument("--device", default=default_device, type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
@@ -147,8 +147,6 @@ def log(message, logfile="run.log"):
         f.write(msg + "\n")
 
     return True
-
-
 
 
 # 保存结果到pickle文件

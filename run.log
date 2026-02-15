@@ -1082,3 +1082,571 @@
 
 
 
+
+
+
+
+[2026-02-14 20:30:14] ********************Experiment Results********************
+[2026-02-14 20:30:14] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__100
+[2026-02-14 20:30:14] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 100
+[2026-02-14 20:30:14] ------------------------------------------------------------
+[2026-02-14 20:30:14] Tau       : 0.6723 ± 0.0000
+[2026-02-14 20:30:14] MAPE      : 0.0484 ± 0.0000
+[2026-02-14 20:30:14] ErrBnd    : 0.1785 ± 0.0000
+[2026-02-14 20:30:14] ********************Experiment Success********************
+
+
+[2026-02-14 20:38:54] ********************Experiment Results********************
+[2026-02-14 20:38:54] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__172
+[2026-02-14 20:38:54] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 172
+[2026-02-14 20:38:54] ------------------------------------------------------------
+
+
+[2026-02-14 20:48:52] ********************Experiment Results********************
+[2026-02-14 20:48:52] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__424
+[2026-02-14 20:48:52] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 424
+[2026-02-14 20:48:52] ------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+[2026-02-14 21:08:56] ********************Experiment Results********************
+[2026-02-14 21:08:56] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda
+[2026-02-14 21:08:56] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda
+[2026-02-14 21:08:56] ------------------------------------------------------------
+[2026-02-14 21:08:56] Tau       : 0.6416 ± 0.0000
+[2026-02-14 21:08:56] MAPE      : 0.0336 ± 0.0000
+[2026-02-14 21:08:56] ErrBnd    : 0.5994 ± 0.0000
+[2026-02-14 21:08:56] ********************Experiment Success********************
+
+
+
+
+
+
+[2026-02-14 21:44:21] ********************Experiment Results********************
+[2026-02-14 21:44:21] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__100
+[2026-02-14 21:44:21] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 100
+[2026-02-14 21:44:21] ------------------------------------------------------------
+[2026-02-14 21:44:21] Tau       : 0.6416 ± 0.0000
+[2026-02-14 21:44:21] MAPE      : 0.0336 ± 0.0000
+[2026-02-14 21:44:21] ErrBnd    : 0.5994 ± 0.0000
+[2026-02-14 21:44:21] ********************Experiment Success********************
+
+
+[2026-02-14 21:51:42] ********************Experiment Results********************
+[2026-02-14 21:51:42] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__172
+[2026-02-14 21:51:42] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 172
+[2026-02-14 21:51:42] ------------------------------------------------------------
+[2026-02-14 21:51:42] Tau       : 0.7222 ± 0.0000
+[2026-02-14 21:51:42] MAPE      : 0.0310 ± 0.0000
+[2026-02-14 21:51:42] ErrBnd    : 0.6923 ± 0.0000
+[2026-02-14 21:51:42] ********************Experiment Success********************
+
+
+[2026-02-14 22:00:21] ********************Experiment Results********************
+[2026-02-14 22:00:21] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__424
+[2026-02-14 22:00:21] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 424
+[2026-02-14 22:00:21] ------------------------------------------------------------
+[2026-02-14 22:00:21] Tau       : 0.7788 ± 0.0000
+[2026-02-14 22:00:21] MAPE      : 0.0293 ± 0.0000
+[2026-02-14 22:00:21] ErrBnd    : 0.7461 ± 0.0000
+[2026-02-14 22:00:21] ********************Experiment Success********************
+
+
+[2026-02-14 22:29:20] ********************Experiment Results********************
+[2026-02-14 22:29:20] log Filename: dataset__nasbench101|model__model45|debug__0|device__cuda|percent__4236
+[2026-02-14 22:29:20] Experiment Detail: dataset : nasbench101, model : model45, debug : 0, device : cuda, percent : 4236
+[2026-02-14 22:29:20] ------------------------------------------------------------
+[2026-02-14 22:29:20] Tau       : 0.8630 ± 0.0000
+[2026-02-14 22:29:20] MAPE      : 0.0240 ± 0.0000
+[2026-02-14 22:29:20] ErrBnd    : 0.8684 ± 0.0000
+[2026-02-14 22:29:20] ********************Experiment Success********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[2026-02-15 14:24:34] ********************Experiment Results********************
+[2026-02-15 14:24:34] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__500|percent__100
+[2026-02-15 14:24:34] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 500, percent : 100
+[2026-02-15 14:24:34] ------------------------------------------------------------
+[2026-02-15 14:24:34] Tau       : 0.6099 ± 0.0000
+[2026-02-15 14:24:34] MAPE      : 0.0412 ± 0.0000
+[2026-02-15 14:24:34] ErrBnd    : 0.2325 ± 0.0000
+[2026-02-15 14:24:34] ********************Experiment Success********************
+
+
+
+
+[2026-02-15 14:28:46] ********************Experiment Results********************
+[2026-02-15 14:28:46] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 14:28:46] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 14:28:46] ------------------------------------------------------------
+[2026-02-15 14:28:46] Tau       : 0.6099 ± 0.0000
+[2026-02-15 14:28:46] MAPE      : 0.0412 ± 0.0000
+[2026-02-15 14:28:46] ErrBnd    : 0.2325 ± 0.0000
+[2026-02-15 14:28:46] ********************Experiment Success********************
+
+
+[2026-02-15 14:33:46] ********************Experiment Results********************
+[2026-02-15 14:33:46] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 14:33:46] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 14:33:46] ------------------------------------------------------------
+[2026-02-15 14:33:46] Tau       : 0.6099 ± 0.0000
+[2026-02-15 14:33:46] MAPE      : 0.0412 ± 0.0000
+[2026-02-15 14:33:46] ErrBnd    : 0.2325 ± 0.0000
+[2026-02-15 14:33:46] ********************Experiment Success********************
+
+
+
+加了深度编码
+[2026-02-15 14:45:35] ********************Experiment Results********************
+[2026-02-15 14:45:35] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 14:45:35] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 14:45:35] ------------------------------------------------------------
+[2026-02-15 14:45:35] Tau       : 0.6099 ± 0.0000
+[2026-02-15 14:45:35] MAPE      : 0.0412 ± 0.0000
+[2026-02-15 14:45:35] ErrBnd    : 0.2325 ± 0.0000
+[2026-02-15 14:45:35] BestEpoch : 90.0000 ± 0.0000
+[2026-02-15 14:45:35] TrainTimeSec: 72.6453 ± 0.0000
+[2026-02-15 14:45:35] ********************Experiment Success********************
+
+没加深度编码
+[2026-02-15 14:48:31] ********************Experiment Results********************
+[2026-02-15 14:48:31] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 14:48:31] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 14:48:31] ------------------------------------------------------------
+[2026-02-15 14:48:31] Tau       : 0.5907 ± 0.0000
+[2026-02-15 14:48:31] MAPE      : 0.0360 ± 0.0000
+[2026-02-15 14:48:31] ErrBnd    : 0.4004 ± 0.0000
+[2026-02-15 14:48:31] BestEpoch : 291.0000 ± 0.0000
+[2026-02-15 14:48:31] TrainTimeSec: 86.6016 ± 0.0000
+[2026-02-15 14:48:31] ********************Experiment Success********************
+
+使用了nnformer的encoder，加了深度编码
+[2026-02-15 14:57:26] ********************Experiment Results********************
+[2026-02-15 14:57:26] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 14:57:26] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 14:57:26] ------------------------------------------------------------
+[2026-02-15 14:57:26] Tau       : 0.6844 ± 0.0000
+[2026-02-15 14:57:26] MAPE      : 0.0318 ± 0.0000
+[2026-02-15 14:57:26] ErrBnd    : 0.6369 ± 0.0000
+[2026-02-15 14:57:26] BestEpoch : 1308.0000 ± 0.0000
+[2026-02-15 14:57:26] TrainTimeSec: 277.3434 ± 0.0000
+[2026-02-15 14:57:26] ********************Experiment Success********************
+
+
+使用了nnformer的encoder，没加深度编码
+[2026-02-15 15:03:44] ********************Experiment Results********************
+[2026-02-15 15:03:44] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 15:03:44] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 15:03:44] ------------------------------------------------------------
+[2026-02-15 15:03:44] Tau       : 0.5923 ± 0.0000
+[2026-02-15 15:03:44] MAPE      : 0.0345 ± 0.0000
+[2026-02-15 15:03:44] ErrBnd    : 0.5282 ± 0.0000
+[2026-02-15 15:03:44] BestEpoch : 1633.0000 ± 0.0000
+[2026-02-15 15:03:44] TrainTimeSec: 310.2917 ± 0.0000
+[2026-02-15 15:03:44] ********************Experiment Success********************
+
+
+直接使用了Transformer作为encoder，看看nnformer是否有乱讲话
+[2026-02-15 15:22:36] ********************Experiment Results********************
+[2026-02-15 15:22:36] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__100
+[2026-02-15 15:22:36] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 100
+[2026-02-15 15:22:36] ------------------------------------------------------------
+[2026-02-15 15:22:36] Tau       : 0.6476 ± 0.0000
+[2026-02-15 15:22:36] MAPE      : 0.0368 ± 0.0000
+[2026-02-15 15:22:36] ErrBnd    : 0.5896 ± 0.0000
+[2026-02-15 15:22:36] BestEpoch : 920.0000 ± 0.0000
+[2026-02-15 15:22:36] TrainTimeSec: 207.8941 ± 0.0000
+[2026-02-15 15:22:36] ********************Experiment Success********************
+
+
+[2026-02-15 15:28:09] ********************Experiment Results********************
+[2026-02-15 15:28:09] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__172
+[2026-02-15 15:28:09] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 172
+[2026-02-15 15:28:09] ------------------------------------------------------------
+[2026-02-15 15:28:09] Tau       : 0.6517 ± 0.0000
+[2026-02-15 15:28:09] MAPE      : 0.0327 ± 0.0000
+[2026-02-15 15:28:09] ErrBnd    : 0.5568 ± 0.0000
+[2026-02-15 15:28:09] BestEpoch : 755.0000 ± 0.0000
+[2026-02-15 15:28:09] TrainTimeSec: 224.9619 ± 0.0000
+[2026-02-15 15:28:09] ********************Experiment Success********************
+
+
+[2026-02-15 15:36:30] ********************Experiment Results********************
+[2026-02-15 15:36:30] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__424
+[2026-02-15 15:36:30] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 424
+[2026-02-15 15:36:30] ------------------------------------------------------------
+[2026-02-15 15:36:30] Tau       : 0.6668 ± 0.0000
+[2026-02-15 15:36:30] MAPE      : 0.0319 ± 0.0000
+[2026-02-15 15:36:30] ErrBnd    : 0.5652 ± 0.0000
+[2026-02-15 15:36:30] BestEpoch : 1438.0000 ± 0.0000
+[2026-02-15 15:36:30] TrainTimeSec: 395.0825 ± 0.0000
+[2026-02-15 15:36:30] ********************Experiment Success********************
+
+
+[2026-02-15 15:57:46] ********************Experiment Results********************
+[2026-02-15 15:57:46] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__4236
+[2026-02-15 15:57:46] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 4236
+[2026-02-15 15:57:46] ------------------------------------------------------------
+[2026-02-15 15:57:46] Tau       : 0.6951 ± 0.0000
+[2026-02-15 15:57:46] MAPE      : 0.0300 ± 0.0000
+[2026-02-15 15:57:46] ErrBnd    : 0.6544 ± 0.0000
+[2026-02-15 15:57:46] BestEpoch : 801.0000 ± 0.0000
+[2026-02-15 15:57:46] TrainTimeSec: 1168.7499 ± 0.0000
+[2026-02-15 15:57:46] ********************Experiment Success********************
+
+
+
+
+[2026-02-15 16:09:27] ********************Experiment Results********************
+[2026-02-15 16:09:27] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__100
+[2026-02-15 16:09:27] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 100
+[2026-02-15 16:09:27] ------------------------------------------------------------
+[2026-02-15 16:09:27] Tau       : 0.6368 ± 0.0000
+[2026-02-15 16:09:27] MAPE      : 0.0371 ± 0.0000
+[2026-02-15 16:09:27] ErrBnd    : 0.5735 ± 0.0000
+[2026-02-15 16:09:27] BestEpoch : 1723.0000 ± 0.0000
+[2026-02-15 16:09:27] TrainTimeSec: 293.5389 ± 0.0000
+[2026-02-15 16:09:27] ********************Experiment Success********************
+
+
+[2026-02-15 16:14:05] ********************Experiment Results********************
+[2026-02-15 16:14:05] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__172
+[2026-02-15 16:14:05] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 172
+[2026-02-15 16:14:05] ------------------------------------------------------------
+[2026-02-15 16:14:05] Tau       : 0.6550 ± 0.0000
+[2026-02-15 16:14:05] MAPE      : 0.0329 ± 0.0000
+[2026-02-15 16:14:05] ErrBnd    : 0.5934 ± 0.0000
+[2026-02-15 16:14:05] BestEpoch : 708.0000 ± 0.0000
+[2026-02-15 16:14:05] TrainTimeSec: 220.4018 ± 0.0000
+[2026-02-15 16:14:05] ********************Experiment Success********************
+
+
+[2026-02-15 16:20:32] ********************Experiment Results********************
+[2026-02-15 16:20:32] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|percent__424
+[2026-02-15 16:20:32] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, percent : 424
+[2026-02-15 16:20:32] ------------------------------------------------------------
+[2026-02-15 16:20:32] Tau       : 0.6626 ± 0.0000
+[2026-02-15 16:20:32] MAPE      : 0.0319 ± 0.0000
+[2026-02-15 16:20:32] ErrBnd    : 0.5908 ± 0.0000
+[2026-02-15 16:20:32] BestEpoch : 1046.0000 ± 0.0000
+[2026-02-15 16:20:32] TrainTimeSec: 329.6796 ± 0.0000
+[2026-02-15 16:20:32] ********************Experiment Success********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[2026-02-15 16:37:57] ********************Experiment Results********************
+[2026-02-15 16:37:57] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|patience__1000|percent__100
+[2026-02-15 16:37:57] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, patience : 1000, percent : 100
+[2026-02-15 16:37:57] ------------------------------------------------------------
+[2026-02-15 16:37:57] Tau       : 0.6361 ± 0.0000
+[2026-02-15 16:37:57] MAPE      : 0.0348 ± 0.0000
+[2026-02-15 16:37:57] ErrBnd    : 0.5026 ± 0.0000
+[2026-02-15 16:37:57] BestEpoch : 504.0000 ± 0.0000
+[2026-02-15 16:37:57] TrainTimeSec: 100.2992 ± 0.0000
+[2026-02-15 16:37:57] ********************Experiment Success********************
+
+
+
+
+[2026-02-15 16:45:39] ********************Experiment Results********************
+[2026-02-15 16:45:39] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__1|patience__1000|percent__100
+[2026-02-15 16:45:39] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 1, patience : 1000, percent : 100
+[2026-02-15 16:45:39] ------------------------------------------------------------
+[2026-02-15 16:45:39] Tau       : 0.5908 ± 0.0000
+[2026-02-15 16:45:39] MAPE      : 0.0423 ± 0.0000
+[2026-02-15 16:45:39] ErrBnd    : 0.2297 ± 0.0000
+[2026-02-15 16:45:39] BestEpoch : 408.0000 ± 0.0000
+[2026-02-15 16:45:39] TrainTimeSec: 70.4917 ± 0.0000
+[2026-02-15 16:45:39] ********************Experiment Success********************
+
+
+[2026-02-15 16:48:06] ********************Experiment Results********************
+[2026-02-15 16:48:06] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__3|patience__1000|percent__100
+[2026-02-15 16:48:06] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 3, patience : 1000, percent : 100
+[2026-02-15 16:48:06] ------------------------------------------------------------
+[2026-02-15 16:48:06] Tau       : 0.6236 ± 0.0000
+[2026-02-15 16:48:06] MAPE      : 0.0339 ± 0.0000
+[2026-02-15 16:48:06] ErrBnd    : 0.5091 ± 0.0000
+[2026-02-15 16:48:06] BestEpoch : 494.0000 ± 0.0000
+[2026-02-15 16:48:06] TrainTimeSec: 91.3244 ± 0.0000
+[2026-02-15 16:48:06] ********************Experiment Success********************
+
+
+[2026-02-15 16:51:15] ********************Experiment Results********************
+[2026-02-15 16:51:15] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__5|patience__1000|percent__100
+[2026-02-15 16:51:15] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 5, patience : 1000, percent : 100
+[2026-02-15 16:51:15] ------------------------------------------------------------
+[2026-02-15 16:51:15] Tau       : 0.6478 ± 0.0000
+[2026-02-15 16:51:15] MAPE      : 0.0368 ± 0.0000
+[2026-02-15 16:51:15] ErrBnd    : 0.5887 ± 0.0000
+[2026-02-15 16:51:15] BestEpoch : 912.0000 ± 0.0000
+[2026-02-15 16:51:15] TrainTimeSec: 134.2489 ± 0.0000
+[2026-02-15 16:51:15] ********************Experiment Success********************
+
+
+[2026-02-15 16:55:01] ********************Experiment Results********************
+[2026-02-15 16:55:01] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__7|patience__1000|percent__100
+[2026-02-15 16:55:01] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 7, patience : 1000, percent : 100
+[2026-02-15 16:55:01] ------------------------------------------------------------
+[2026-02-15 16:55:01] Tau       : 0.6408 ± 0.0000
+[2026-02-15 16:55:01] MAPE      : 0.0371 ± 0.0000
+[2026-02-15 16:55:01] ErrBnd    : 0.5731 ± 0.0000
+[2026-02-15 16:55:01] BestEpoch : 1060.0000 ± 0.0000
+[2026-02-15 16:55:01] TrainTimeSec: 170.9293 ± 0.0000
+[2026-02-15 16:55:01] ********************Experiment Success********************
+
+
+
+
+[2026-02-15 17:02:15] ********************Experiment Results********************
+[2026-02-15 17:02:15] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__7|patience__1000|percent__100
+[2026-02-15 17:02:15] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 7, patience : 1000, percent : 100
+[2026-02-15 17:02:15] ------------------------------------------------------------
+[2026-02-15 17:02:15] Tau       : 0.6250 ± 0.0000
+[2026-02-15 17:02:15] MAPE      : 0.0396 ± 0.0000
+[2026-02-15 17:02:15] ErrBnd    : 0.5597 ± 0.0000
+[2026-02-15 17:02:15] BestEpoch : 1608.0000 ± 0.0000
+[2026-02-15 17:02:15] TrainTimeSec: 209.1950 ± 0.0000
+[2026-02-15 17:02:15] ********************Experiment Success********************
+
+
+[2026-02-15 17:06:01] ********************Experiment Results********************
+[2026-02-15 17:06:01] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__9|patience__1000|percent__100
+[2026-02-15 17:06:01] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 9, patience : 1000, percent : 100
+[2026-02-15 17:06:01] ------------------------------------------------------------
+[2026-02-15 17:06:01] Tau       : 0.6398 ± 0.0000
+[2026-02-15 17:06:01] MAPE      : 0.0366 ± 0.0000
+[2026-02-15 17:06:01] ErrBnd    : 0.5573 ± 0.0000
+[2026-02-15 17:06:01] BestEpoch : 882.0000 ± 0.0000
+[2026-02-15 17:06:01] TrainTimeSec: 170.1128 ± 0.0000
+[2026-02-15 17:06:01] ********************Experiment Success********************
+
+
+[2026-02-15 17:09:57] ********************Experiment Results********************
+[2026-02-15 17:09:57] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__11|patience__1000|percent__100
+[2026-02-15 17:09:57] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 11, patience : 1000, percent : 100
+[2026-02-15 17:09:57] ------------------------------------------------------------
+[2026-02-15 17:09:57] Tau       : 0.6435 ± 0.0000
+[2026-02-15 17:09:57] MAPE      : 0.0361 ± 0.0000
+[2026-02-15 17:09:57] ErrBnd    : 0.5677 ± 0.0000
+[2026-02-15 17:09:57] BestEpoch : 778.0000 ± 0.0000
+[2026-02-15 17:09:57] TrainTimeSec: 178.3058 ± 0.0000
+[2026-02-15 17:09:57] ********************Experiment Success********************
+
+
+[2026-02-15 17:14:06] ********************Experiment Results********************
+[2026-02-15 17:14:06] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__6|graphnhead__1|patience__1000|percent__100
+[2026-02-15 17:14:06] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 6, graph_n_head : 1, patience : 1000, percent : 100
+[2026-02-15 17:14:06] ------------------------------------------------------------
+[2026-02-15 17:14:06] Tau       : 0.6348 ± 0.0000
+[2026-02-15 17:14:06] MAPE      : 0.0383 ± 0.0000
+[2026-02-15 17:14:06] ErrBnd    : 0.5777 ± 0.0000
+[2026-02-15 17:14:06] BestEpoch : 1481.0000 ± 0.0000
+[2026-02-15 17:14:06] TrainTimeSec: 191.8120 ± 0.0000
+[2026-02-15 17:14:06] ********************Experiment Success********************
+
+
+[2026-02-15 17:17:33] ********************Experiment Results********************
+[2026-02-15 17:17:33] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__6|graphnhead__2|patience__1000|percent__100
+[2026-02-15 17:17:33] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 6, graph_n_head : 2, patience : 1000, percent : 100
+[2026-02-15 17:17:33] ------------------------------------------------------------
+[2026-02-15 17:17:33] Tau       : 0.6360 ± 0.0000
+[2026-02-15 17:17:33] MAPE      : 0.0370 ± 0.0000
+[2026-02-15 17:17:33] ErrBnd    : 0.5748 ± 0.0000
+[2026-02-15 17:17:33] BestEpoch : 1027.0000 ± 0.0000
+[2026-02-15 17:17:33] TrainTimeSec: 151.7803 ± 0.0000
+[2026-02-15 17:17:33] ********************Experiment Success********************
+
+
+[2026-02-15 17:21:18] ********************Experiment Results********************
+[2026-02-15 17:21:18] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__6|graphnhead__4|patience__1000|percent__100
+[2026-02-15 17:21:18] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 6, graph_n_head : 4, patience : 1000, percent : 100
+[2026-02-15 17:21:18] ------------------------------------------------------------
+[2026-02-15 17:21:18] Tau       : 0.6380 ± 0.0000
+[2026-02-15 17:21:18] MAPE      : 0.0375 ± 0.0000
+[2026-02-15 17:21:18] ErrBnd    : 0.5684 ± 0.0000
+[2026-02-15 17:21:18] BestEpoch : 1227.0000 ± 0.0000
+[2026-02-15 17:21:18] TrainTimeSec: 168.8011 ± 0.0000
+[2026-02-15 17:21:18] ********************Experiment Success********************
+
+
+[2026-02-15 17:24:49] ********************Experiment Results********************
+[2026-02-15 17:24:49] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__6|graphnhead__8|patience__1000|percent__100
+[2026-02-15 17:24:49] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 6, graph_n_head : 8, patience : 1000, percent : 100
+[2026-02-15 17:24:49] ------------------------------------------------------------
+[2026-02-15 17:24:49] Tau       : 0.6289 ± 0.0000
+[2026-02-15 17:24:49] MAPE      : 0.0368 ± 0.0000
+[2026-02-15 17:24:49] ErrBnd    : 0.5669 ± 0.0000
+[2026-02-15 17:24:49] BestEpoch : 1013.0000 ± 0.0000
+[2026-02-15 17:24:49] TrainTimeSec: 151.9166 ± 0.0000
+[2026-02-15 17:24:49] ********************Experiment Success********************
+
+
+[2026-02-15 18:29:44] ********************Experiment Results********************
+[2026-02-15 18:29:44] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__5|graphnhead__4|patience__1000|percent__100
+[2026-02-15 18:29:44] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 5, graph_n_head : 4, patience : 1000, percent : 100
+[2026-02-15 18:29:44] ------------------------------------------------------------
+[2026-02-15 18:29:44] Tau       : 0.6296 ± 0.0000
+[2026-02-15 18:29:44] MAPE      : 0.0350 ± 0.0000
+[2026-02-15 18:29:44] ErrBnd    : 0.5039 ± 0.0000
+[2026-02-15 18:29:44] BestEpoch : 616.0000 ± 0.0000
+[2026-02-15 18:29:44] TrainTimeSec: 114.7830 ± 0.0000
+[2026-02-15 18:29:44] ********************Experiment Success********************
+
+
+[2026-02-15 18:35:09] ********************Experiment Results********************
+[2026-02-15 18:35:09] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__5|graphnhead__2|patience__1000|percent__100
+[2026-02-15 18:35:09] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 5, graph_n_head : 2, patience : 1000, percent : 100
+[2026-02-15 18:35:09] ------------------------------------------------------------
+[2026-02-15 18:35:09] Tau       : 0.6301 ± 0.0000
+[2026-02-15 18:35:09] MAPE      : 0.0354 ± 0.0000
+[2026-02-15 18:35:09] ErrBnd    : 0.4841 ± 0.0000
+[2026-02-15 18:35:09] BestEpoch : 683.0000 ± 0.0000
+[2026-02-15 18:35:09] TrainTimeSec: 118.9518 ± 0.0000
+[2026-02-15 18:35:09] ********************Experiment Success********************
+
+
+[2026-02-15 18:39:09] ********************Experiment Results********************
+[2026-02-15 18:39:09] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__5|graphnhead__1|patience__1000|percent__100
+[2026-02-15 18:39:09] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 5, graph_n_head : 1, patience : 1000, percent : 100
+[2026-02-15 18:39:09] ------------------------------------------------------------
+[2026-02-15 18:39:09] Tau       : 0.6478 ± 0.0000
+[2026-02-15 18:39:09] MAPE      : 0.0368 ± 0.0000
+[2026-02-15 18:39:09] ErrBnd    : 0.5887 ± 0.0000
+[2026-02-15 18:39:09] BestEpoch : 912.0000 ± 0.0000
+[2026-02-15 18:39:09] TrainTimeSec: 136.4604 ± 0.0000
+[2026-02-15 18:39:09] ********************Experiment Success********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[2026-02-15 19:40:32] ********************Experiment Results********************
+[2026-02-15 19:40:32] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__1|graphnhead__1|percent__100
+[2026-02-15 19:40:32] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 1, graph_n_head : 1, percent : 100
+[2026-02-15 19:40:32] ------------------------------------------------------------
+[2026-02-15 19:40:32] Tau       : 0.5908 ± 0.0000
+[2026-02-15 19:40:32] MAPE      : 0.0423 ± 0.0000
+[2026-02-15 19:40:32] ErrBnd    : 0.2297 ± 0.0000
+[2026-02-15 19:40:32] BestEpoch : 408.0000 ± 0.0000
+[2026-02-15 19:40:32] TrainTimeSec: 94.9616 ± 0.0000
+[2026-02-15 19:40:32] ********************Experiment Success********************
+
+
+[2026-02-15 19:43:28] ********************Experiment Results********************
+[2026-02-15 19:43:28] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__3|graphnhead__1|percent__100
+[2026-02-15 19:43:28] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 3, graph_n_head : 1, percent : 100
+[2026-02-15 19:43:28] ------------------------------------------------------------
+[2026-02-15 19:43:28] Tau       : 0.6236 ± 0.0000
+[2026-02-15 19:43:28] MAPE      : 0.0339 ± 0.0000
+[2026-02-15 19:43:28] ErrBnd    : 0.5091 ± 0.0000
+[2026-02-15 19:43:28] BestEpoch : 494.0000 ± 0.0000
+[2026-02-15 19:43:28] TrainTimeSec: 119.6440 ± 0.0000
+[2026-02-15 19:43:28] ********************Experiment Success********************
+
+
+[2026-02-15 19:47:14] ********************Experiment Results********************
+[2026-02-15 19:47:14] log Filename: dataset__nasbench101|model__model47|debug__0|device__cuda|gcnlayers__5|graphnhead__1|percent__100
+[2026-02-15 19:47:14] Experiment Detail: dataset : nasbench101, model : model47, debug : 0, device : cuda, gcn_layers : 5, graph_n_head : 1, percent : 100
+[2026-02-15 19:47:14] ------------------------------------------------------------
+[2026-02-15 19:47:14] Tau       : 0.6478 ± 0.0000
+[2026-02-15 19:47:14] MAPE      : 0.0368 ± 0.0000
+[2026-02-15 19:47:14] ErrBnd    : 0.5887 ± 0.0000
+[2026-02-15 19:47:14] BestEpoch : 912.0000 ± 0.0000
+[2026-02-15 19:47:14] TrainTimeSec: 170.8681 ± 0.0000
+[2026-02-15 19:47:14] ********************Experiment Success********************
+
+

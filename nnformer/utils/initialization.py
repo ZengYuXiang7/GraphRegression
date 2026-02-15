@@ -42,22 +42,14 @@ def init_layers(args, logger):
         return net
 
     loss = NARLoss(args.lambda_mse, args.lambda_rank, args.lambda_consistency)
-    model_info(net, logger)
-
+    # model_info(net, logger)
+    print(net)
     net = net.to(args.device)
     loss = loss.to(args.device)
 
     # Model EMA
-    if args.model_ema:
-        # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
-        model_ema = ModelEma(
-            net, decay=args.model_ema_decay, device=args.device, resume=""
-        )
-        logger.info(f"Using EMA with decay = {args.model_ema_decay:.8f}")
-    else:
-        model_ema = None
 
-    return net, model_ema, loss
+    return net, None, loss
 
 
 def init_optim(args, net, nbatches, warm_step=0.1):
