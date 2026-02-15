@@ -9,6 +9,7 @@ from torch import Tensor
 import math
 from timm.models.layers import DropPath, to_2tuple
 
+
 class FFN(nn.Module):
     def __init__(self, d_model, d_ff_ratio):
         super(FFN, self).__init__()
@@ -56,11 +57,18 @@ class Encoder(nn.Module):
 
         # GAT layers (Graph Attention Network)
         self.gat = nn.ModuleList(
-            [DenseGATConv(self.d_model, self.d_model, heads=4, concat=False)] +  # Initial GAT layer
-            [DenseGATConv(self.d_model, self.d_model, heads=4, concat=False) for _ in range(self.gcn_layers - 1)]  # Intermediate GAT layers
+            [
+                DenseGATConv(self.d_model, self.d_model, heads=4, concat=False)
+            ]  # Initial GAT layer
+            + [
+                DenseGATConv(self.d_model, self.d_model, heads=4, concat=False)
+                for _ in range(self.gcn_layers - 1)
+            ]  # Intermediate GAT layers
         )
 
-        self.norms = nn.ModuleList([nn.LayerNorm(self.d_model) for _ in range(self.gcn_layers)])
+        self.norms = nn.ModuleList(
+            [nn.LayerNorm(self.d_model) for _ in range(self.gcn_layers)]
+        )
 
         self.ffn = nn.ModuleList(
             [FFN(self.d_model, self.d_ff_ratio) for _ in range(self.gcn_layers)]
@@ -75,8 +83,6 @@ class Encoder(nn.Module):
             x_ = F.relu(x)
             x = ffn(x_) + x
         return x
-
-
 
 
 class SquareReLU(nn.Module):
@@ -118,6 +124,7 @@ class MultiHeadAttention(nn.Module):
         key = key.view(B, L, self.n_head, self.head_size).transpose(1, 2)
         value = value.view(B, L, self.n_head, self.head_size).transpose(1, 2)
         score = torch.matmul(query, key.mT) / self.scale
+
         if self.rel_pos_bias:
             adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
             adj = adj.masked_fill(adj != 0, 1)
@@ -135,10 +142,10 @@ class MultiHeadAttention(nn.Module):
             # ).permute(0, 3, 1, 2)
             # score = score * (1 + pe)
             score = score.masked_fill(pe == 0, -torch.inf)
+
         attn = F.softmax(score, dim=-1)
         attn = self.attn_dropout(attn)  # (b, n_head, l_q, l_k)
         x = torch.matmul(attn, value)
-
         x = x.transpose(1, 2).reshape(B, L, C)
         return self.resid_dropout(self.proj(x))
 
@@ -204,7 +211,6 @@ class Mlp(nn.Module):
         return x
 
 
-
 class FeedForwardBlock(nn.Module):
     def __init__(
         self,
@@ -218,12 +224,55 @@ class FeedForwardBlock(nn.Module):
         super().__init__()
 
         self.norm = nn.LayerNorm(dim)
-        self.mlp = Mlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
+        if gcn:
+            self.mlp = GINMlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
+        else:
+            self.mlp = Mlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
 
     def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
         x_ = self.norm(x)
         x_ = self.mlp(x_, adj)
         return x_ + x
+
+
+class GINMlp(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        mlp_ratio: float = 4.0,
+        out_features: Optional[int] = None,
+        act_layer: str = "relu",
+        drop: float = 0.0,
+    ):
+        super().__init__()
+        in_features = dim
+        out_features = out_features or in_features
+        hidden_features = int(mlp_ratio * in_features)
+        drop_probs = to_2tuple(drop)
+
+        self.fc1 = nn.Linear(in_features, hidden_features, False)
+        self.gcn = nn.Linear(in_features, hidden_features, False)
+        if act_layer.lower() == "relu":
+            self.act = nn.ReLU()
+        elif act_layer.lower() == "leaky_relu":
+            self.act = nn.LeakyReLU()
+        elif act_layer.lower() == "square_relu":
+            self.act = SquareReLU()
+        else:
+            raise ValueError(f"Unsupported activation: {act_layer}")
+        self.drop1 = nn.Dropout(drop_probs[0])
+        self.fc2 = nn.Linear(hidden_features, out_features, False)
+        self.drop2 = nn.Dropout(drop_probs[1])
+
+    def forward(self, x: Tensor, adj: Tensor) -> Tensor:
+        out = self.fc1(x)
+        gcn_x1, gcn_x2 = self.gcn(x).chunk(2, dim=-1)
+        out = out + torch.cat([adj @ gcn_x1, adj.mT @ gcn_x2], dim=-1)
+        out = self.act(out)
+        out = self.drop1(out)
+        out = self.fc2(out)
+        out = self.drop2(out)
+        return out
 
 
 class EncoderBlock(nn.Module):
@@ -256,14 +305,31 @@ class nnEncoder(nn.Module):
         # Encoder stage
         self.layers = nn.ModuleList()
         for i in range(12):
-            self.layers.append(
-                EncoderBlock(d_model, 4, 4, 'relu', 0.1, 0)
-            )
+            self.layers.append(EncoderBlock(d_model, 4, 4, "relu", 0.1, 0))
 
     def forward(self, x, adj):
         for i, layer in enumerate(self.layers):
             x = layer(x, adj)
         return x
+
+
+class TransformerEncoder(nn.Module):
+    def __init__(self, d_model, d_ff_ratio, gcn_layers, n_head=1):
+        super().__init__()
+        dim_feedforward = int(d_model * d_ff_ratio)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=n_head,
+            dim_feedforward=dim_feedforward,
+            dropout=0.1,
+            activation="relu",
+            batch_first=True,
+            norm_first=False,
+        )
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=gcn_layers)
+
+    def forward(self, x, adj):
+        return self.encoder(x)
 
 
 @register_model("model46")
@@ -276,10 +342,16 @@ class Net(nn.Module):
         self.d_model = int(getattr(config, "d_model", 192))  # Model dimension
         self.dropout = float(getattr(config, "dropout", 0.10))  # Dropout rate
         self.gcn_layers = int(getattr(config, "gcn_layers", 2))  # Number of GCN layers
-        self.graph_readout = str(getattr(config, "graph_readout", 'cls'))  # Graph readout type
-        self.d_ff_ratio = float(getattr(config, "d_ff_ratio", 4))  # FFN width control via ratio
+        self.graph_readout = str(
+            getattr(config, "graph_readout", "cls")
+        )  # Graph readout type
+        self.d_ff_ratio = float(
+            getattr(config, "d_ff_ratio", 4)
+        )  # FFN width control via ratio
+        self.graph_n_head = int(getattr(config, "graph_n_head", 1))
+        self.encoder_type = str(getattr(config, "encoder_type", "nn"))
 
-        if self.graph_readout == 'cls':
+        if self.graph_readout == "cls":
             self.cls_token = nn.Parameter(torch.zeros(1, 1, self.d_model))
         else:
             self.cls_token = None
@@ -288,8 +360,11 @@ class Net(nn.Module):
         self.depth_embed = nn.Linear(32, self.d_model)
         self.prev_norm = nn.LayerNorm(self.d_model)
 
-        self.encoder = Encoder(self.d_model, self.d_ff_ratio, self.gcn_layers)
-        # self.encoder = nnEncoder(self.d_model, self.d_ff_ratio, self.gcn_layers)
+        # self.encoder = Encoder(self.d_model, self.d_ff_ratio, self.gcn_layers)
+        self.encoder = nnEncoder(self.d_model, self.d_ff_ratio, self.gcn_layers)
+        # self.encoder = TransformerEncoder(
+            # self.d_model, self.d_ff_ratio, self.gcn_layers, self.graph_n_head
+        # )
 
         self.post_norm = nn.LayerNorm(self.d_model)
 
@@ -306,47 +381,34 @@ class Net(nn.Module):
     def get_data(self, sample, static_feature):
         # x = sample['ops'].long()
         # x = F.one_hot(x, num_classes=self.num_node_features).float()  # One-hot encoding for operations
-        x = sample['code']
-        adj = sample['code_adj']  # Adjacency matrix for graph structure
-        x = x.to(device=adj.device)  # Move the one-hot encoded tensor to the same device as adj
+        x = sample["code"]
+        adj = sample["code_adj"]  # Adjacency matrix for graph structure
+        x = x.to(
+            device=adj.device
+        )  # Move the one-hot encoded tensor to the same device as adj
         return x, adj
 
     def forward(self, sample, static_feature):
         x, adj = self.get_data(sample, static_feature)
 
-        depth = sample['op_depth'].long()
+        depth = sample["op_depth"].long()
         depth = F.one_hot(depth, num_classes=32).float()
 
         # 首先是不是编码的问题
-        # x = self.op_embeds(x)
         x = self.op_embeds(x) + self.depth_embed(depth)
 
         # 然后才是encoder的问题
-
-        if self.graph_readout == 'cls':
-            num_nodes = adj.size(1)  # Assuming adj is of shape [batch_size, num_nodes, num_nodes]
-
-            # Create a new adjacency matrix with the CLS token added (expand to 2D first)
-            new_adj = torch.zeros(adj.size(0), num_nodes + 1, num_nodes + 1, device=adj.device)
-
-            # Copy the original adjacency matrix into the top-left corner of the new adjacency matrix
+        if self.graph_readout == "cls":
+            num_nodes = adj.size(
+                1
+            )  # Assuming adj is of shape [batch_size, num_nodes, num_nodes]
+            new_adj = torch.ones(
+                adj.size(0), num_nodes + 1, num_nodes + 1, device=adj.device
+            )
             new_adj[:, 1:, 1:] = adj
-
-            # Update the adjacency matrix to include the CLS token's connections
-            new_adj[:, 0, :num_nodes] = 1  # CLS token connects to all nodes
-            # new_adj[:, :num_nodes, 0] = 1  # All nodes connect to CLS token
-
-            # Optionally, add a self-loop to the CLS token
-            # new_adj[:, 0, 0] = 1  # CLS token has a self-loop
-
-            # Update adj to be the new adjacency matrix
             adj = new_adj
-
-            # Create the CLS token (a learnable parameter)
-            cls_token = self.cls_token.expand(x.size(0), 1, self.d_model)  # Expand CLS token to match batch size
-
-            # Insert the CLS token at the first position in the feature matrix
-            x = torch.cat([cls_token, x], dim=1)  # Add the CLS token as the first node
+            cls_token = self.cls_token.expand(x.size(0), 1, self.d_model)
+            x = torch.cat([cls_token, x], dim=1)
 
         x = self.prev_norm(x)
 
@@ -355,13 +417,13 @@ class Net(nn.Module):
         x = self.post_norm(x)
 
         # Global pooling to obtain a fixed-size graph representation
-        if self.graph_readout == 'sum':
+        if self.graph_readout == "sum":
             x = torch.sum(x, dim=1)  # Global sum pooling
-        elif self.graph_readout == 'mean':
+        elif self.graph_readout == "mean":
             x = torch.mean(x, dim=1)
-        elif self.graph_readout == 'max':
+        elif self.graph_readout == "max":
             x = torch.max(x, dim=1)[0]  # Get only the max values
-        elif self.graph_readout == 'cls':
+        elif self.graph_readout == "cls":
             x = x[:, 0, :]
 
         # Final latency prediction
