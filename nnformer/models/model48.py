@@ -10,30 +10,6 @@ import math
 from timm.models.layers import DropPath, to_2tuple
 
 
-class FFN(nn.Module):
-    def __init__(self, d_model, d_ff_ratio):
-        super(FFN, self).__init__()
-        # Use d_ff_ratio to define the width of FFN layers
-        d_ff = int(d_model * d_ff_ratio)
-        self.norm = nn.LayerNorm(d_model)
-        self.fc1 = nn.Linear(d_model, d_ff)  # First layer (Up-sampling)
-        self.fc2 = nn.Linear(d_ff, d_model)  # Second layer (Down-sampling)
-        self.act = nn.ReLU()  # GELU activation
-        self.dropout1 = nn.Dropout(p=0.1)
-        self.dropout2 = nn.Dropout(p=0.1)
-
-    def forward(self, x):
-        x_ = self.norm(x)
-
-        x_ = self.fc1(x_)
-        x_ = self.act(x_)  # Up-sampling with activation
-        x_ = self.dropout1(x_)
-        x_ = self.fc2(x_)  # Down-sampling to match original dimension
-        x_ = self.dropout2(x_)
-
-        return x_ + x
-
-
 class PredHead(nn.Module):
     def __init__(self, d_model):
         super(PredHead, self).__init__()
@@ -46,51 +22,6 @@ class PredHead(nn.Module):
         x = self.fc_relu1(self.fc_1(x))
         x = self.fc_relu2(self.fc_2(x))
         return x
-
-
-class Encoder(nn.Module):
-    def __init__(self, d_model, d_ff_ratio, gcn_layers):
-        super(Encoder, self).__init__()
-        self.d_model = d_model
-        self.gcn_layers = gcn_layers
-        self.d_ff_ratio = d_ff_ratio
-
-        # GAT layers (Graph Attention Network)
-        self.gat = nn.ModuleList(
-            [
-                DenseGATConv(self.d_model, self.d_model, heads=4, concat=False)
-            ]  # Initial GAT layer
-            + [
-                DenseGATConv(self.d_model, self.d_model, heads=4, concat=False)
-                for _ in range(self.gcn_layers - 1)
-            ]  # Intermediate GAT layers
-        )
-
-        self.norms = nn.ModuleList(
-            [nn.LayerNorm(self.d_model) for _ in range(self.gcn_layers)]
-        )
-
-        self.ffn = nn.ModuleList(
-            [FFN(self.d_model, self.d_ff_ratio) for _ in range(self.gcn_layers)]
-        )
-
-    def forward(self, x, adj):
-        # GAT + FFN (ResNet style)
-        for gcn_layer, norm, ffn in zip(self.gat, self.norms, self.ffn):
-            x_ = norm(x)
-            x = gcn_layer(x_, adj) + x
-
-            x_ = F.relu(x)
-            x = ffn(x_) + x
-        return x
-
-
-class SquareReLU(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x: Tensor) -> Tensor:
-        return x * F.relu(x)
 
 
 class MultiHeadAttention(nn.Module):
@@ -174,43 +105,6 @@ class SelfAttentionBlock(nn.Module):
         return x_ + x
 
 
-class Mlp(nn.Module):
-    def __init__(
-        self,
-        dim: int,
-        mlp_ratio: float = 4.0,
-        out_features: Optional[int] = None,
-        act_layer: str = "relu",
-        drop: float = 0.0,
-    ):
-        super().__init__()
-        in_features = dim
-        out_features = out_features or in_features
-        hidden_features = int(mlp_ratio * in_features)
-        drop_probs = to_2tuple(drop)
-
-        self.fc1 = nn.Linear(in_features, hidden_features)
-        if act_layer.lower() == "relu":
-            self.act = nn.ReLU()
-        elif act_layer.lower() == "leaky_relu":
-            self.act = nn.LeakyReLU()
-        elif act_layer.lower() == "square_relu":
-            self.act = SquareReLU()
-        else:
-            raise ValueError(f"Unsupported activation: {act_layer}")
-        self.drop1 = nn.Dropout(drop_probs[0])
-        self.fc2 = nn.Linear(hidden_features, out_features, False)
-        self.drop2 = nn.Dropout(drop_probs[1])
-
-    def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
-        x = self.fc1(x)
-        x = self.act(x)
-        x = self.drop1(x)
-        x = self.fc2(x)
-        x = self.drop2(x)
-        return x
-
-
 class FeedForwardBlock(nn.Module):
     def __init__(
         self,
@@ -224,10 +118,7 @@ class FeedForwardBlock(nn.Module):
         super().__init__()
 
         self.norm = nn.LayerNorm(dim)
-        if gcn:
-            self.mlp = GINMlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
-        else:
-            self.mlp = Mlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
+        self.mlp = GINMlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
 
     def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
         x_ = self.norm(x)
@@ -256,8 +147,6 @@ class GINMlp(nn.Module):
             self.act = nn.ReLU()
         elif act_layer.lower() == "leaky_relu":
             self.act = nn.LeakyReLU()
-        elif act_layer.lower() == "square_relu":
-            self.act = SquareReLU()
         else:
             raise ValueError(f"Unsupported activation: {act_layer}")
         self.drop1 = nn.Dropout(drop_probs[0])
@@ -337,23 +226,25 @@ class TransformerEncoder(nn.Module):
         if adj is not None:
             adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
             adj = adj.masked_fill(adj != 0, 1)
-            adj = adj.float()
+            adj = adj.bool()
             if self.try_exp == 1:
-                bias = adj
+                bias = adj.unsqueeze(1)
             elif self.try_exp == 2:
                 bias = torch.stack([adj, adj.mT], dim=1)
             elif self.try_exp == 3:
-                bias = torch.stack([adj, adj.mT, adj.mT @ adj, adj @ adj.mT], dim=1)
+                bias = torch.stack([adj, adj.mT, adj.mT & adj, adj & adj.mT], dim=1)
             else:
-                bias = torch.stack([adj, adj.mT], dim=1)
-            bias = bias > 0
+                bias = None
+                raise ValueError(f"Unsupported try_exp: {self.try_exp}")
+            
             src_mask = torch.zeros_like(bias, dtype=x.dtype)
             src_mask = src_mask.masked_fill(~bias, torch.finfo(x.dtype).min)
             src_mask = src_mask.reshape(-1, L, L)
+            
         return self.encoder(x, mask=src_mask)
 
 
-@register_model("model47")
+@register_model("model48")
 class Net(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -408,6 +299,7 @@ class Net(nn.Module):
     def get_data(self, sample, static_feature):
         x = sample["ops"].long()
         adj = sample["code_adj"]  # Adjacency matrix for graph structure
+        adj = adj + torch.eye(adj.size(1), device=adj.device)
         x = x.to(device=adj.device)
         return x, adj
 

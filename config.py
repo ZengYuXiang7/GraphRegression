@@ -222,7 +222,7 @@ def parse_args():
     # Head
     parser.add_argument("--d_model", type=int, default=160)
     parser.add_argument("--use_head", type=int, default=0)
-    parser.add_argument("--gcn_layers", type=int, default=4)
+    parser.add_argument("--gcn_layers", type=int, default=6)
     parser.add_argument("--tf_layers", type=int, default=3)
     parser.add_argument("--graph_readout", type=str, default="cls")
 
@@ -242,6 +242,9 @@ def parse_args():
     )
     parser.add_argument(
         "--tqdm", default=1, type=int, help="use tqdm for training progress bar"
+    )
+    parser.add_argument(
+        "--try_exp", default=-1, type=int, help="try experiment id"
     )
 
     # args = parser.parse_args()

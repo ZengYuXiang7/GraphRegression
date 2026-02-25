@@ -115,7 +115,6 @@ class NasbenchDataset(Dataset):
             "code_depth": code_depth,
             "val_acc_avg": val_acc_avg,
             "test_acc_avg": test_acc_avg,
-
             # 2026年01月31日17:25:03
             "op_depth": op_depth,
         }
@@ -127,6 +126,9 @@ class NasbenchDataset(Dataset):
         code_depth = torch.tensor(data["code_depth"], dtype=torch.float)
         val_acc_avg = torch.Tensor([data["valid_accuracy_avg"]]) * 0.01
         test_acc_avg = torch.Tensor([data["test_accuracy_avg"]]) * 0.01
+        
+        op_depth = _to_tensor(data["op_depth"], torch.float32)
+        
         return {
             "ops": ops,
             "code": code,
@@ -135,6 +137,7 @@ class NasbenchDataset(Dataset):
             "code_depth": code_depth,
             "val_acc_avg": val_acc_avg,
             "test_acc_avg": test_acc_avg,
+            "op_depth": op_depth,
         }
 
     def __len__(self):

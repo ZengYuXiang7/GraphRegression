@@ -47,6 +47,7 @@ def gen_data_point(nasbench):
         training_time_avg = training_time / 3.0
         ops = transform_operations_category(fixed_metrics["module_operations"])
         print(ops)
+        
         adj_array = fixed_metrics["module_adjacency"].tolist()
         params = fixed_metrics["trainable_parameters"]
         print("parameters size: {}".format(params))

@@ -169,7 +169,9 @@ class GINMlp(nn.Module):
     def forward(self, x: Tensor, adj: Tensor) -> Tensor:
         out = self.fc1(x)
         gcn_x1, gcn_x2 = self.gcn(x).chunk(2, dim=-1)
+        
         out = out + torch.cat([adj @ gcn_x1, adj.mT @ gcn_x2], dim=-1)
+        
         out = self.act(out)
         out = self.drop1(out)
         out = self.fc2(out)

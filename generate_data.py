@@ -101,6 +101,7 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
         "code": code,
         "code_rel_pos": rel_pos,
         "code_depth": code_depth,
+        "op_depth": bfs_depth_from_start(adj),
     }
 
 
