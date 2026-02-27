@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     """只负责声明已知参数"""
     parser = argparse.ArgumentParser()
     default_device = "mps" if sys.platform == "darwin" else "cuda"
-    parser.add_argument("--rounds", default=3, type=int)
+    parser.add_argument("--rounds", default=2, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
     parser.add_argument("--model", default="model49", type=str)
     parser.add_argument("--device", default=default_device, type=str)

@@ -33,19 +33,67 @@
 #     python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
 # done
 
-# 再次检验nnformer的结果
-model_version="model48"
-percents="424 4236"
-for percent in $percents; do            
-    python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 4 --try_exp 3
-done
+# 再次检验nnformer的结果 在A800上面跑
+# model_version="model48"
+# percents="424 4236"
+# for percent in $percents; do            
+#     python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 4 --try_exp 3
+# done
 
 
-# 对ffn改进成moe
+# 2026年02月25日16:28:16，目前只研究双向信息流
+
+# 对ffn改进成moe  在rtx4090上面跑 ffn的对角线和全局节点断连接 
+# model_version="model49"
+# percents="100 172 424 4236"
+# # percents="100"
+# for percent in $percents; do            
+#     python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
+# done
+
+# moe 采用了top1
+# model_version="model51"
+# percents="100 172 424 4236"
+# # percents="100"
+# for percent in $percents; do            
+#     python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
+# done
+
+# moe 不采取断连接，正常连接
+# model_version="model50"
+# percents="100 172 424 4236"
+# # percents="100"
+# for percent in $percents; do            
+#     python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
+# done
+
+
+# 2026年02月26日22:22:33 采用了nape的编码方案，探索一下是不是编码方案的问题
+# 对ffn改进成moe ffn的对角线和全局节点断连接 
+# onehot_op|nape|nerf|trans
+python generate_data.py --embed_type nape
 model_version="model49"
 percents="100 172 424 4236"
 # percents="100"
 for percent in $percents; do            
-    python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 4 --try_exp 3
+    python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
 done
 
+python generate_data.py --embed_type nerf
+model_version="model49"
+percents="100 172 424 4236"
+# percents="100"
+for percent in $percents; do            
+    python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
+done
+
+python generate_data.py --embed_type trans
+model_version="model49"
+percents="100 172 424 4236"
+# percents="100"
+for percent in $percents; do            
+    python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2
+done
+
+
+# 读文章去ICLR查查新技术，看看是否有新的思路

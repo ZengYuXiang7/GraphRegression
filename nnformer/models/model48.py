@@ -237,6 +237,7 @@ class TransformerEncoder(nn.Module):
                 bias = None
                 raise ValueError(f"Unsupported try_exp: {self.try_exp}")
             
+            bias = bias + torch.eye(L, device=bias.device).bool().unsqueeze(1)
             src_mask = torch.zeros_like(bias, dtype=x.dtype)
             src_mask = src_mask.masked_fill(~bias, torch.finfo(x.dtype).min)
             src_mask = src_mask.reshape(-1, L, L)
@@ -299,7 +300,6 @@ class Net(nn.Module):
     def get_data(self, sample, static_feature):
         x = sample["ops"].long()
         adj = sample["code_adj"]  # Adjacency matrix for graph structure
-        adj = adj + torch.eye(adj.size(1), device=adj.device)
         x = x.to(device=adj.device)
         return x, adj
 

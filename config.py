@@ -191,7 +191,6 @@ def parse_args():
     parser.add_argument("--graph_d_model", type=int, default=160)
     parser.add_argument("--graph_d_ff", type=int, default=640)
 
-    parser.add_argument("--graph_n_head", type=int, default=1)
     parser.add_argument("--depths", nargs="+", type=int, default=[12])
     parser.add_argument(
         "--avg_tokens",
@@ -221,8 +220,10 @@ def parse_args():
 
     # Head
     parser.add_argument("--d_model", type=int, default=160)
+    parser.add_argument("--graph_n_head", type=int, default=4)
+    
     parser.add_argument("--use_head", type=int, default=0)
-    parser.add_argument("--gcn_layers", type=int, default=6)
+    parser.add_argument("--gcn_layers", type=int, default=12)
     parser.add_argument("--tf_layers", type=int, default=3)
     parser.add_argument("--graph_readout", type=str, default="cls")
 

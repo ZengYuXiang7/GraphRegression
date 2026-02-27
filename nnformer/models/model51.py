@@ -36,6 +36,7 @@ class BatchedMoEGraphFFN(nn.Module):
         drop: float = 0.0,
         gate_hidden_ratio: float = 0.5,  # gate 的小 MLP 宽度比例（可设 0 表示只用一层线性）
         temperature: float = 1.0,  # softmax 温度，<1 更尖锐，>1 更平滑
+        top1: bool = False,
     ):
         super().__init__()
         in_features = dim
@@ -60,6 +61,7 @@ class BatchedMoEGraphFFN(nn.Module):
             self.gate = nn.Linear(in_features, 3, bias=True)
 
         self.temperature = float(temperature)
+        self.top1 = bool(top1)
 
         if act_layer.lower() == "relu":
             self.act = nn.ReLU()
@@ -76,9 +78,6 @@ class BatchedMoEGraphFFN(nn.Module):
         # x: [B,L,C], adj: [B,L,L]
         B, L, C = x.shape
         adj = adj.float()
-        adj[:, 0, :] = adj[:, :, 0] = 0
-        # 把对角线也置为零
-        adj = adj.masked_fill(torch.eye(L, device=adj.device, dtype=torch.bool), 0)
 
         # --- experts ---
         e0 = self.self_expert(x)  # [B,L,H]
@@ -92,6 +91,11 @@ class BatchedMoEGraphFFN(nn.Module):
         # --- gate weights ---
         logits = self.gate(x) / self.temperature  # [B,L,3]
         w = F.softmax(logits, dim=-1)  # [B,L,3]
+        
+        if self.top1:
+            top_idx = w.argmax(dim=-1)
+            mask = F.one_hot(top_idx, num_classes=3).to(dtype=w.dtype)
+            w = w * mask
 
         # --- mixture (按 expert 维度加权求和) ---
         out = w[..., 0:1] * e0 + w[..., 1:2] * e1 + w[..., 2:3] * e2  # [B,L,H]
@@ -122,7 +126,11 @@ class GraphTransformerLayer(nn.Module):
         self.norm2 = nn.LayerNorm(d_model)
         self.norm_first = norm_first
         self.ffn = BatchedMoEGraphFFN(
-            d_model, mlp_ratio=mlp_ratio, act_layer=activation, drop=dropout
+            d_model,
+            mlp_ratio=mlp_ratio,
+            act_layer=activation,
+            drop=dropout,
+            top1=True,
         )
 
     def _sa_block(self, x: Tensor, src_mask: Optional[Tensor]) -> Tensor:
@@ -204,7 +212,7 @@ class PredHead(nn.Module):
         return x
 
 
-@register_model("model49")
+@register_model("model51")
 class Net(nn.Module):
     def __init__(self, config):
         super().__init__()

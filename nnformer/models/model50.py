@@ -76,10 +76,7 @@ class BatchedMoEGraphFFN(nn.Module):
         # x: [B,L,C], adj: [B,L,L]
         B, L, C = x.shape
         adj = adj.float()
-        adj[:, 0, :] = adj[:, :, 0] = 0
-        # 把对角线也置为零
-        adj = adj.masked_fill(torch.eye(L, device=adj.device, dtype=torch.bool), 0)
-
+        
         # --- experts ---
         e0 = self.self_expert(x)  # [B,L,H]
 
@@ -137,7 +134,7 @@ class GraphTransformerLayer(nn.Module):
             x = x + self._sa_block(self.norm1(x), src_mask)
             x = x + self._ff_block(self.norm2(x), adj)
             return x
-
+        
         x = self.norm1(x + self._sa_block(x, src_mask))
         x = self.norm2(x + self._ff_block(x, adj))
         return x
@@ -161,7 +158,6 @@ class TransformerEncoder(nn.Module):
                 for _ in range(gcn_layers)
             ]
         )
-
     def forward(self, x, adj):
         L = x.size(1)
         src_mask = None
@@ -171,7 +167,7 @@ class TransformerEncoder(nn.Module):
             adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
             adj = adj.masked_fill(adj != 0, 1)
             adj = adj.bool()
-
+            
             if self.try_exp == 1:
                 bias = adj.unsqueeze(1)
             elif self.try_exp == 2:
@@ -180,7 +176,7 @@ class TransformerEncoder(nn.Module):
                 bias = torch.stack([adj, adj.mT, adj.mT & adj, adj & adj.mT], dim=1)
             else:
                 raise ValueError(f"Unsupported try_exp: {self.try_exp}")
-
+            
             src_mask = torch.zeros_like(bias, dtype=x.dtype)
             src_mask = src_mask.masked_fill(~bias, torch.finfo(x.dtype).min)
             src_mask = src_mask.reshape(-1, L, L)
@@ -204,7 +200,7 @@ class PredHead(nn.Module):
         return x
 
 
-@register_model("model49")
+@register_model("model50")
 class Net(nn.Module):
     def __init__(self, config):
         super().__init__()
