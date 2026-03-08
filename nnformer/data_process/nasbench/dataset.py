@@ -19,6 +19,7 @@ class NasbenchDataset(Dataset):
         data_path,
         percent=0,
         lbd_consistency=0,
+        embed_type=''
     ):
         self.part = part
         self.dataset = dataset
@@ -26,7 +27,8 @@ class NasbenchDataset(Dataset):
         self.data_path = data_path
         self.percent = percent
         self.cache_dir = f"./data/{dataset}/{dataset}_{lbd_consistency}" # Cache directory
-
+        self.embed_type = embed_type
+        
         t0 = time.time()
         logger.info(f"Building dataset {self.part} from .pth file")
         self.data = self._load()
@@ -44,7 +46,8 @@ class NasbenchDataset(Dataset):
 
     def _load(self):
         # Check if cached data exists
-        cache_file = os.path.join(self.cache_dir, f"{self.part}_{self.percent}_cached_data.pth")
+        cache_file = os.path.join(self.cache_dir, f"{self.part}_{self.percent}_{self.embed_type}_cached_data.pth")
+        
         if os.path.exists(cache_file):
             # If cache file exists, load it
             print(f"Loading cached data from {cache_file}")

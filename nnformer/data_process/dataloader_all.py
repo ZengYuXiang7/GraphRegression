@@ -75,9 +75,10 @@ def init_dataloader(args, logger):
                 args.data_path,
                 args.percent,
                 args.lambda_consistency,
+                embed_type=args.embed_type,
             )
             valset = NasbenchDataset(
-                logger, args.dataset, "val", args.data_path, args.percent
+                logger, args.dataset, "val", args.data_path, args.percent, embed_type=args.embed_type,
             )
             train_sampler = FixedLengthBatchSampler(
                 trainset, args.dataset, args.batch_size, include_partial=True
@@ -110,6 +111,7 @@ def init_dataloader(args, logger):
                 args.data_path,
                 args.percent,
                 args.lambda_consistency,
+                embed_type=args.embed_type,
             )
             sampler = FixedLengthBatchSampler(
                 dataset, args.dataset, args.batch_size, include_partial=True

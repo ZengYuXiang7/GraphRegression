@@ -51,7 +51,7 @@ def bfs_depth_from_start(adj: np.ndarray, start: int = 0) -> np.ndarray:
     """
     adj = np.asarray(adj)
     N = adj.shape[0]
-    depth = np.full(N, -1, dtype=np.int32)
+    depth = np.full(N, -1, dtype=int)
     depth[start] = 0
 
     q = deque([start])
@@ -63,14 +63,15 @@ def bfs_depth_from_start(adj: np.ndarray, start: int = 0) -> np.ndarray:
             if depth[v] == -1:
                 depth[v] = depth[u] + 1
                 q.append(v)
-    return depth
+    return list(depth)
 
 def get_nasbench101_item(archs, i: int, enc_dim, embed_type):
     index = str(i)
     ops = archs[index]["module_operations"]
     adj = archs[index]["module_adjacency"]
     depth = len(ops)
-    code, rel_pos, code_depth = tokenizer(ops, adj, depth, enc_dim, embed_type)
+    op_depth_raw = bfs_depth_from_start(adj)
+    code, rel_pos, code_depth, op_depth = tokenizer(ops, adj, depth, op_depth_raw, enc_dim, embed_type)
     return {
         "index": i,
         "adj": adj,
@@ -80,7 +81,8 @@ def get_nasbench101_item(archs, i: int, enc_dim, embed_type):
         "code": code,
         "code_rel_pos": rel_pos,
         "code_depth": code_depth,
-        "op_depth": bfs_depth_from_start(adj),
+        "op_depth_raw": op_depth_raw,
+        "op_depth": op_depth,
     }
 
 
@@ -89,7 +91,8 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
     ops = archs[index]["module_operations"]
     adj = archs[index]["module_adjacency"]
     depth = len([op for op in ops if op != 5])  # `op == 5` indicates `none`
-    code, rel_pos, code_depth = tokenizer(ops, adj, depth, enc_dim, embed_type)
+    op_depth_raw = bfs_depth_from_start(adj)
+    code, rel_pos, code_depth, op_depth = tokenizer(ops, adj, depth, op_depth_raw, enc_dim, embed_type)
     return {
         "index": i,
         "adj": adj,
@@ -101,7 +104,8 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
         "code": code,
         "code_rel_pos": rel_pos,
         "code_depth": code_depth,
-        "op_depth": bfs_depth_from_start(adj),
+        "op_depth": op_depth,
+        "op_depth_raw": op_depth_raw,
     }
 
 

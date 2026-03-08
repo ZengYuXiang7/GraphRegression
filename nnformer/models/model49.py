@@ -32,7 +32,7 @@ class BatchedMoEGraphFFN(nn.Module):
         dim: int,
         mlp_ratio: float = 4.0,
         out_features: int | None = None,
-        act_layer: str = "relu",
+        act_layer: str = "gelu",
         drop: float = 0.0,
         gate_hidden_ratio: float = 0.5,  # gate 的小 MLP 宽度比例（可设 0 表示只用一层线性）
         temperature: float = 1.0,  # softmax 温度，<1 更尖锐，>1 更平滑
@@ -53,7 +53,7 @@ class BatchedMoEGraphFFN(nn.Module):
         if gate_hidden_ratio > 0:
             self.gate = nn.Sequential(
                 nn.Linear(in_features, gate_hidden, bias=True),
-                nn.ReLU(),
+                nn.GELU(),
                 nn.Linear(gate_hidden, 3, bias=True),
             )
         else:
@@ -61,7 +61,9 @@ class BatchedMoEGraphFFN(nn.Module):
 
         self.temperature = float(temperature)
 
-        if act_layer.lower() == "relu":
+        if act_layer.lower() == "gelu":
+            self.act = nn.GELU()
+        elif act_layer.lower() == "relu":
             self.act = nn.ReLU()
         elif act_layer.lower() == "leaky_relu":
             self.act = nn.LeakyReLU()
@@ -110,7 +112,7 @@ class GraphTransformerLayer(nn.Module):
         n_head: int,
         mlp_ratio: float,
         dropout: float,
-        activation: str = "relu",
+        activation: str = "gelu",
         norm_first: bool = True,
     ):
         super().__init__()
@@ -155,7 +157,7 @@ class TransformerEncoder(nn.Module):
                     n_head=self.n_head,
                     mlp_ratio=d_ff_ratio,
                     dropout=0.1,
-                    activation="relu",
+                    activation="gelu",
                     norm_first=True,
                 )
                 for _ in range(gcn_layers)
@@ -195,8 +197,8 @@ class PredHead(nn.Module):
         super(PredHead, self).__init__()
         self.fc_1 = nn.Linear(d_model, d_model)
         self.fc_2 = nn.Linear(d_model, d_model)
-        self.fc_relu1 = nn.ReLU()
-        self.fc_relu2 = nn.ReLU()
+        self.fc_relu1 = nn.GELU()
+        self.fc_relu2 = nn.GELU()
 
     def forward(self, x):
         x = self.fc_relu1(self.fc_1(x))
@@ -229,11 +231,11 @@ class Net(nn.Module):
         else:
             self.cls_token = None
 
-        # self.op_embeds = nn.Linear(self.num_node_features, self.d_model)
-        # self.depth_embed = nn.Linear(32, self.d_model)
+        self.op_embeds = nn.Linear(self.num_node_features, self.d_model)
+        self.depth_embed = nn.Linear(32, self.d_model)
 
-        self.op_embeds = nn.Embedding(self.num_node_features, self.d_model)
-        self.depth_embed = nn.Embedding(32, self.d_model)
+        # self.op_embeds = nn.Embedding(self.num_node_features, self.d_model)
+        # self.depth_embed = nn.Embedding(32, self.d_model)
 
         self.prev_norm = nn.LayerNorm(self.d_model)
 
@@ -257,16 +259,16 @@ class Net(nn.Module):
         self.init_weights()
 
     def get_data(self, sample, static_feature):
-        x = sample["ops"].long()
+        # x = sample["ops"].long()
+        # 2026年02月28日17:23:56，先尝试各种编码方案
+        x = sample["code"]
         adj = sample["code_adj"]  # Adjacency matrix for graph structure
         adj = adj + torch.eye(adj.size(1), device=adj.device)
         return x, adj
 
     def forward(self, sample, static_feature):
         x, adj = self.get_data(sample, static_feature)
-
-        depth = sample["op_depth"].long()
-        # depth = F.one_hot(depth, num_classes=32).float()
+        depth = sample["op_depth"]
 
         # 首先是不是编码的问题
         x = self.op_embeds(x) + self.depth_embed(depth)
@@ -317,5 +319,5 @@ class Net(nn.Module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.Embedding):
-            nn.init.constant_(m.weight, 0)
+            nn.init.constant_(m.weight, 0.02)
             # nn.init.trunc_normal_(m.weight, std=0.02)

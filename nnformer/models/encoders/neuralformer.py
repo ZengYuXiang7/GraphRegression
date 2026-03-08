@@ -295,50 +295,69 @@ class RegHead(nn.Module):
         res = self.layer(x_)
         return res
 
-
 def tokenizer(
-    ops: List[int], adj, depth: int, dim_x: int = 192, embed_type: str = "nape"
+    ops: List[int], adj, depth: int, op_depth: List[int], dim_x: int = 192, embed_type: str = "nape"
 ):
     adj = torch.tensor(adj)
 
     if embed_type == "onehot_op":
         code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x)
         code_depth = F.one_hot(torch.tensor([depth]), num_classes=dim_x)
-        return (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8))
+        code_op_depth = F.one_hot(torch.tensor(op_depth), num_classes=dim_x)
+        return (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8), code_op_depth.to(torch.int8))
     elif embed_type == "onehot_oppos":
         code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x // 2)
         code_pos = F.one_hot(torch.arange(len(ops)), num_classes=dim_x // 2)
         code_ops = torch.cat([code_ops, code_pos], dim=-1)
-        # # Another implementation
-        # code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x)
-        # code_ops[:, dim_x // 2:] = F.one_hot(torch.arrange(len(ops)), num_classes=dim_x // 2)
         code_depth = F.one_hot(torch.tensor([depth]), num_classes=dim_x)
-        return (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8))
+        code_op_depth = F.one_hot(torch.tensor(op_depth), num_classes=dim_x)
+        return (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8), code_op_depth.to(torch.int8))
     elif embed_type == "onehot_oplaplacian":
         code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x)
         code_ops[:, dim_x // 2 : dim_x // 2 + adj.shape[-1]] = adj.sum(-1) - adj
         code_depth = F.one_hot(torch.tensor([depth]), num_classes=dim_x)
-        return (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8))
+        code_op_depth = F.one_hot(torch.tensor(op_depth), num_classes=dim_x)
+        return (code_ops.to(torch.int8), adj.to(torch.int8), code_depth.to(torch.int8), code_op_depth.to(torch.int8))
     else:
         # encode operation
+        # fn = Embedder(dim_x // 2, embed_type=embed_type)
+        # code_ops_list = [fn(torch.Tensor([30]))]
+        # code_ops_list += [fn(torch.Tensor([op])) for op in ops]
+        # code_ops = torch.stack(code_ops_list, dim=0)  # (len, dim_x)
+
+        # depth = torch.Tensor([depth])
+        # code_depth = fn(depth).reshape(1, -1)
+
+        # # encode op_depth
+        # code_op_depth_list = [fn(torch.Tensor([d])) for d in op_depth]
+        # code_op_depth = torch.stack(code_op_depth_list, dim=0)  # (len, dim_x)
+
+        # # shortest_path, path = algos.floyd_warshall(adj.numpy())
+        # # shortest_path = torch.from_numpy(shortest_path).long()
+        # # shortest_path = torch.clamp(shortest_path, min=0, max=8)
+
+        # rel_pos = torch.full((len(ops) + 2, len(ops) + 2), fill_value=9).int()
+        # rel_pos[1:-1, 1:-1] = adj
+        
+        
+        # 2026年03月03日17:21:13，先不做多两个节点
         fn = Embedder(dim_x // 2, embed_type=embed_type)
-        code_ops_list = [fn(torch.Tensor([30]))]
-        code_ops_list += [fn(torch.Tensor([op])) for op in ops]
-        code_ops = torch.stack(code_ops_list, dim=0)  # (len, dim_x)
 
-        depth = torch.Tensor([depth])
-        code_depth = fn(depth).reshape(1, -1)
+        # 1) 只对自己的 ops 做 embedding，不加 30
+        code_ops_list = [fn(torch.tensor([op], dtype=torch.float32)) for op in ops]
+        code_ops = torch.stack(code_ops_list, dim=0)  # (len(ops), dim)
 
-        # shortest_path, path = algos.floyd_warshall(adj.numpy())
-        # shortest_path = torch.from_numpy(shortest_path).long()
-        # shortest_path = torch.clamp(shortest_path, min=0, max=8)
+        # 2) depth 还是全局标量 embedding
+        code_depth = fn(torch.tensor([depth], dtype=torch.float32)).reshape(1, -1)
 
-        rel_pos = torch.full((len(ops) + 2, len(ops) + 2), fill_value=9).int()
-        rel_pos[1:-1, 1:-1] = adj
-        # rel_pos[0, 0] = 0
-        # rel_pos[-1, -1] = 0
-        return code_ops, rel_pos, code_depth
+        # 3) 每个 op 的深度 embedding
+        code_op_depth_list = [fn(torch.tensor([d], dtype=torch.float32)) for d in op_depth]
+        code_op_depth = torch.stack(code_op_depth_list, dim=0)  # (len(ops), dim)
 
+        # 4) rel_pos 只用自己的邻接/关系矩阵，不扩维
+        rel_pos = adj.int()   # 形状应为 (len(ops), len(ops))
+
+        return code_ops, rel_pos, code_depth, code_op_depth
 
 class NNFormer(nn.Module):
     def __init__(

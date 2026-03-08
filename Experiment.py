@@ -14,7 +14,6 @@ from main import run_exp
 
 torch.set_default_dtype(torch.float32)
 
-
 # 在这里写下任何实验模板所产生的metrics
 def RunOnce(runid, config):
     remove_pycache_dirs()
@@ -30,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     default_device = "mps" if sys.platform == "darwin" else "cuda"
     parser.add_argument("--rounds", default=2, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
-    parser.add_argument("--model", default="model49", type=str)
+    parser.add_argument("--model", default="model50", type=str)
     parser.add_argument("--device", default=default_device, type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
