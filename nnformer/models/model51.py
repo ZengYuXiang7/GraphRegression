@@ -2,214 +2,247 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import DenseGATConv
-from nnformer.models.encoders.neuralformer import EncoderBlock
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 from typing import List, Optional
 from torch import Tensor
 import math
 from timm.models.layers import DropPath, to_2tuple
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch import Tensor
-from timm.models.layers import to_2tuple
+from torch_geometric.nn import DenseSAGEConv, dense_diff_pool
 
 
-class BatchedMoEGraphFFN(nn.Module):
+class DenseGraphSAGEBlock(nn.Module):
     """
-    MoE-FFN with 3 experts:
-      e0: self expert        -> W0 x
-      e1: in-neighbor expert -> A  (W1 x)
-      e2: out-neighbor expert-> A^T(W2 x)
-
-    x:   [B, L, C]
-    adj: [B, L, L]  (建议是 0/1 或归一化邻接；你上游已经加了自环)
+    Dense GraphSAGE block for dense adjacency:
+        x:   [B, N, F]
+        adj: [B, N, N]
     """
-
-    def __init__(
-        self,
-        dim: int,
-        mlp_ratio: float = 4.0,
-        out_features: int | None = None,
-        act_layer: str = "relu",
-        drop: float = 0.0,
-        gate_hidden_ratio: float = 0.5,  # gate 的小 MLP 宽度比例（可设 0 表示只用一层线性）
-        temperature: float = 1.0,  # softmax 温度，<1 更尖锐，>1 更平滑
-        top1: bool = False,
-    ):
+    def __init__(self, in_dim, hidden_dim, out_dim, num_layers=3,
+                 dropout=0.0, concat=True, use_bn=True):
         super().__init__()
-        in_features = dim
-        out_features = out_features or in_features
-        hidden_features = int(mlp_ratio * in_features)
-        drop_probs = to_2tuple(drop)
+        assert num_layers >= 1
 
-        # --- 3 个 experts，都输出同一维度 hidden_features ---
-        self.self_expert = nn.Linear(in_features, hidden_features, bias=False)
-        self.in_expert = nn.Linear(in_features, hidden_features, bias=False)
-        self.out_expert = nn.Linear(in_features, hidden_features, bias=False)
+        self.concat = concat
+        self.dropout = dropout
+        self.use_bn = use_bn
 
-        # --- gate：对每个 token 输出 3 个权重 ---
-        gate_hidden = int(in_features * gate_hidden_ratio)
-        if gate_hidden_ratio > 0:
-            self.gate = nn.Sequential(
-                nn.Linear(in_features, gate_hidden, bias=True),
-                nn.ReLU(),
-                nn.Linear(gate_hidden, 3, bias=True),
-            )
+        dims = [in_dim]
+        if num_layers == 1:
+            dims.append(out_dim)
         else:
-            self.gate = nn.Linear(in_features, 3, bias=True)
+            dims += [hidden_dim] * (num_layers - 1)
+            dims.append(out_dim)
 
-        self.temperature = float(temperature)
-        self.top1 = bool(top1)
+        self.convs = nn.ModuleList()
+        self.bns = nn.ModuleList()
 
-        if act_layer.lower() == "relu":
-            self.act = nn.ReLU()
-        elif act_layer.lower() == "leaky_relu":
-            self.act = nn.LeakyReLU()
-        else:
-            raise ValueError(f"Unsupported activation: {act_layer}")
+        for i in range(num_layers):
+            self.convs.append(DenseSAGEConv(dims[i], dims[i + 1]))
+            if i != num_layers - 1 and use_bn:
+                # 使用 LayerNorm 做归一化
+                self.bns.append(nn.LayerNorm(dims[i + 1]))
 
-        self.drop1 = nn.Dropout(drop_probs[0])
-        self.fc2 = nn.Linear(hidden_features, out_features, bias=False)
-        self.drop2 = nn.Dropout(drop_probs[1])
+    def forward(self, x, adj):
+        outs = []
 
-    def forward(self, x: Tensor, adj: Tensor) -> Tensor:
-        # x: [B,L,C], adj: [B,L,L]
-        B, L, C = x.shape
-        adj = adj.float()
+        for i, conv in enumerate(self.convs):
+            x = conv(x, adj)
 
-        # --- experts ---
-        e0 = self.self_expert(x)  # [B,L,H]
+            if i != len(self.convs) - 1:
+                x = F.relu(x)
 
-        in_msg = self.in_expert(x)  # [B,L,H]
-        out_msg = self.out_expert(x)  # [B,L,H]
+                if self.use_bn:
+                    # 直接对特征维做 LayerNorm
+                    x = self.bns[i](x)
 
-        e1 = torch.bmm(adj, in_msg)  # [B,L,H]
-        e2 = torch.bmm(adj.transpose(1, 2), out_msg)  # [B,L,H]
+                x = F.dropout(x, p=self.dropout, training=self.training)
 
-        # --- gate weights ---
-        logits = self.gate(x) / self.temperature  # [B,L,3]
-        w = F.softmax(logits, dim=-1)  # [B,L,3]
-        
-        if self.top1:
-            top_idx = w.argmax(dim=-1)
-            mask = F.one_hot(top_idx, num_classes=3).to(dtype=w.dtype)
-            w = w * mask
+            outs.append(x)
 
-        # --- mixture (按 expert 维度加权求和) ---
-        out = w[..., 0:1] * e0 + w[..., 1:2] * e1 + w[..., 2:3] * e2  # [B,L,H]
-
-        out = self.act(out)
-        out = self.drop1(out)
-        out = self.fc2(out)
-        out = self.drop2(out)
-        return out
+        if self.concat:
+            return torch.cat(outs, dim=-1)
+        return outs[-1]
 
 
-class GraphTransformerLayer(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        n_head: int,
-        mlp_ratio: float,
-        dropout: float,
-        activation: str = "relu",
-        norm_first: bool = True,
-    ):
+class DiffPoolLayer(nn.Module):
+    """
+    One dense DiffPool layer.
+    """
+    def __init__(self, input_dim, embed_hidden_dim, embed_dim,
+                 assign_hidden_dim, assign_dim,
+                 gnn_layers=3, dropout=0.0, concat=True):
         super().__init__()
-        self.self_attn = nn.MultiheadAttention(
-            d_model, n_head, dropout=dropout, batch_first=True
-        )
-        self.dropout1 = nn.Dropout(dropout)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
-        self.norm_first = norm_first
-        self.ffn = BatchedMoEGraphFFN(
-            d_model,
-            mlp_ratio=mlp_ratio,
-            act_layer=activation,
-            drop=dropout,
-            top1=True,
+
+        self.embed_gnn = DenseGraphSAGEBlock(
+            in_dim=input_dim,
+            hidden_dim=embed_hidden_dim,
+            out_dim=embed_dim,
+            num_layers=gnn_layers,
+            dropout=dropout,
+            concat=concat
         )
 
-    def _sa_block(self, x: Tensor, src_mask: Optional[Tensor]) -> Tensor:
-        x, _ = self.self_attn(x, x, x, attn_mask=src_mask, need_weights=False)
-        return self.dropout1(x)
-
-    def _ff_block(self, x: Tensor, adj: Tensor) -> Tensor:
-        return self.ffn(x, adj)
-
-    def forward(self, x: Tensor, adj: Tensor, src_mask: Optional[Tensor]) -> Tensor:
-        if self.norm_first:
-            x = x + self._sa_block(self.norm1(x), src_mask)
-            x = x + self._ff_block(self.norm2(x), adj)
-            return x
-
-        x = self.norm1(x + self._sa_block(x, src_mask))
-        x = self.norm2(x + self._ff_block(x, adj))
-        return x
-
-
-class TransformerEncoder(nn.Module):
-    def __init__(self, d_model, d_ff_ratio, gcn_layers, n_head=2, try_exp=-1):
-        super().__init__()
-        self.n_head = n_head
-        self.try_exp = try_exp
-        self.layers = nn.ModuleList(
-            [
-                GraphTransformerLayer(
-                    d_model=d_model,
-                    n_head=self.n_head,
-                    mlp_ratio=d_ff_ratio,
-                    dropout=0.1,
-                    activation="relu",
-                    norm_first=True,
-                )
-                for _ in range(gcn_layers)
-            ]
+        self.assign_gnn = DenseGraphSAGEBlock(
+            in_dim=input_dim,
+            hidden_dim=assign_hidden_dim,
+            out_dim=assign_dim,
+            num_layers=gnn_layers,
+            dropout=dropout,
+            concat=False
         )
 
     def forward(self, x, adj):
-        L = x.size(1)
-        src_mask = None
+        """
+        x:    [B, N, F]
+        adj:  [B, N, N]
+        """
+        z = self.embed_gnn(x, adj)       # node embedding
+        s = self.assign_gnn(x, adj)      # assignment logits
 
-        if adj is not None:
-            adj = adj.clone()
-            adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
-            adj = adj.masked_fill(adj != 0, 1)
-            adj = adj.bool()
-
-            if self.try_exp == 1:
-                bias = adj.unsqueeze(1)
-            elif self.try_exp == 2:
-                bias = torch.stack([adj, adj.mT], dim=1)
-            elif self.try_exp == 3:
-                bias = torch.stack([adj, adj.mT, adj.mT & adj, adj & adj.mT], dim=1)
-            else:
-                raise ValueError(f"Unsupported try_exp: {self.try_exp}")
-
-            src_mask = torch.zeros_like(bias, dtype=x.dtype)
-            src_mask = src_mask.masked_fill(~bias, torch.finfo(x.dtype).min)
-            src_mask = src_mask.reshape(-1, L, L)
-
-        for layer in self.layers:
-            x = layer(x, adj, src_mask)
-        return x
+        x_next, adj_next, lp_loss, ent_loss = dense_diff_pool(z, adj, s)
+        return x_next, adj_next, lp_loss, ent_loss, z, s
 
 
-class PredHead(nn.Module):
-    def __init__(self, d_model):
-        super(PredHead, self).__init__()
-        self.fc_1 = nn.Linear(d_model, d_model)
-        self.fc_2 = nn.Linear(d_model, d_model)
-        self.fc_relu1 = nn.ReLU()
-        self.fc_relu2 = nn.ReLU()
+class DiffPoolEncoder(nn.Module):
+    """
+    Dense adjacency + PyG DiffPool encoder.
 
-    def forward(self, x):
-        x = self.fc_relu1(self.fc_1(x))
-        x = self.fc_relu2(self.fc_2(x))
-        return x
+    输入:
+        x:    [B, N, F]  连续节点特征
+        adj:  [B, N, N]
+        mask: [B, N] 可选
+
+    输出:
+        graph_emb: [B, D]   图级嵌入
+        aux_loss:  scalar   link pred + entropy
+    """
+
+    def __init__(
+        self,
+        input_dim,
+        hidden_dim=128,
+        embedding_dim=128,
+        base_layers=4,           # backbone GNN 层数（StableGNN: 5 层）
+        pool_gnn_layers=3,       # DiffPool 内部 GNN 层数（StableGNN: 3 层）
+        num_pooling=1,           # DiffPool 层数（StableGNN: 1 层）
+        assign_dim=7,
+        pool_ratio=0.25,
+        dropout=0.0,
+        concat=True,
+        final_readout="sum",  # "sum" | "mean" | "max" | "cls"
+    ):
+        super().__init__()
+
+        assert final_readout in ["sum", "mean", "max", "cls"]
+
+        self.concat = concat
+        self.final_readout = final_readout
+        self.num_pooling = num_pooling
+
+        # 第一段 backbone GNN（StableGNN 中的基础 5 层 GNN）
+        self.pre_gnn = DenseGraphSAGEBlock(
+            in_dim=input_dim,
+            hidden_dim=hidden_dim,
+            out_dim=embedding_dim,
+            num_layers=base_layers,
+            dropout=dropout,
+            concat=concat,
+        )
+
+        # 计算 pre_gnn 和每个 DiffPool 层输出的特征维度，用于确定最终 graph_emb 维度
+        if concat:
+            # pre_gnn 输出维度：hidden_dim * (base_layers - 1) + embedding_dim
+            self.pre_out_dim = hidden_dim * (base_layers - 1) + embedding_dim
+            # 每个 DiffPool 中 embed_gnn 输出维度：hidden_dim * (pool_gnn_layers - 1) + embedding_dim
+            self.pool_out_dim = hidden_dim * (pool_gnn_layers - 1) + embedding_dim
+        else:
+            self.pre_out_dim = embedding_dim
+            self.pool_out_dim = embedding_dim
+
+        pool_input_dim = self.pre_out_dim
+
+        # 多层 diffpool
+        self.pool_layers = nn.ModuleList()
+        cur_assign_dim = assign_dim
+
+        for _ in range(num_pooling):
+            self.pool_layers.append(
+                DiffPoolLayer(
+                    input_dim=pool_input_dim,
+                    embed_hidden_dim=hidden_dim,
+                    embed_dim=embedding_dim,
+                    assign_hidden_dim=hidden_dim,
+                    assign_dim=cur_assign_dim,
+                    gnn_layers=pool_gnn_layers,  # StableGNN: 每个 DiffPool 内部 3 层 GNN
+                    dropout=dropout,
+                    concat=concat,
+                )
+            )
+            cur_assign_dim = max(1, int(cur_assign_dim * pool_ratio))
+
+        # 每一层 pooling 都会做一次 graph readout，然后拼接：
+        # 总维度 = pre_gnn_readout_dim + num_pooling * pool_readout_dim
+        self.output_dim = self.pre_out_dim + num_pooling * self.pool_out_dim
+
+    def _graph_readout(self, x):
+        """
+        x: [B, N, F]
+        """
+        # CLS 聚合：直接取第一个节点向量
+        if self.final_readout == "cls":
+            return x[:, 0, :]
+
+        if self.final_readout == "sum":
+            out = x.sum(dim=1)
+        elif self.final_readout == "mean":
+            out = x.mean(dim=1)
+        else:  # "max"
+            out = x.max(dim=1).values
+
+        return out
+
+    def forward(self, x, adj, return_all=False):
+        """
+        x:   [B, N, F]  连续节点特征
+        adj: [B, N, N]
+        """
+
+        # 第一段图编码
+        x = self.pre_gnn(x, adj)
+
+        readouts = [self._graph_readout(x)]
+
+        total_lp_loss = x.new_zeros(())
+        total_ent_loss = x.new_zeros(())
+
+        all_assign = []
+        all_node_emb = [x]
+
+        # 多层 diffpool
+        for pool_layer in self.pool_layers:
+            x, adj, lp_loss, ent_loss, z, s = pool_layer(x, adj)
+
+            total_lp_loss = total_lp_loss + lp_loss
+            total_ent_loss = total_ent_loss + ent_loss
+
+            readouts.append(self._graph_readout(x))
+            all_assign.append(s)
+            all_node_emb.append(x)
+
+        graph_emb = torch.cat(readouts, dim=-1)
+        aux_loss = total_lp_loss + total_ent_loss
+
+        if return_all:
+            return {
+                "graph_emb": graph_emb,
+                "aux_loss": aux_loss,
+                "link_loss": total_lp_loss,
+                "entropy_loss": total_ent_loss,
+                "node_embeds": all_node_emb,
+                "assign_mats": all_assign,
+            }
+
+        return graph_emb, aux_loss
 
 
 @register_model("model51")
@@ -221,103 +254,76 @@ class Net(nn.Module):
         self.num_node_features = 32
         self.d_model = int(getattr(config, "d_model", 192))  # Model dimension
         self.dropout = float(getattr(config, "dropout", 0.10))  # Dropout rate
-        self.gcn_layers = int(getattr(config, "gcn_layers", 2))  # Number of GCN layers
-        self.graph_readout = str(
-            getattr(config, "graph_readout", "cls")
-        )  # Graph readout type
-        self.d_ff_ratio = float(
-            getattr(config, "d_ff_ratio", 4)
-        )  # FFN width control via ratio
-        self.graph_n_head = int(getattr(config, "graph_n_head", 1))
-        self.encoder_type = str(getattr(config, "encoder_type", "nn"))
-        self.try_exp = int(getattr(config, "try_exp", -1))
 
-        if self.graph_readout == "cls":
-            self.cls_token = nn.Parameter(torch.zeros(1, 1, self.d_model))
-        else:
-            self.cls_token = None
+        # StableGNN 风格硬编码配置
+        self.backbone_layers = 4       # 基础 GNN 5 层
+        self.pool_gnn_layers = 2       # DiffPool 内部 GNN 3 层
+        self.num_pooling = 1           # 1 层 DiffPool
 
-        # self.op_embeds = nn.Linear(self.num_node_features, self.d_model)
-        # self.depth_embed = nn.Linear(32, self.d_model)
+        # 使用 CLS 节点作为图级聚合锚点
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, self.d_model))
 
-        self.op_embeds = nn.Embedding(self.num_node_features, self.d_model)
-        self.depth_embed = nn.Embedding(32, self.d_model)
+        self.op_embeds = nn.Linear(self.num_node_features, self.d_model)
+        self.depth_embed = nn.Linear(32, self.d_model)
 
-        self.prev_norm = nn.LayerNorm(self.d_model)
-
-        # self.encoder = nnEncoder(self.d_model, self.d_ff_ratio, self.gcn_layers)
-        self.encoder = TransformerEncoder(
-            self.d_model,
-            self.d_ff_ratio,
-            self.gcn_layers,
-            self.graph_n_head,
-            self.try_exp,
+        # 使用 DiffPoolEncoder 作为图级 encoder，配合 CLS 聚合
+        self.encoder = DiffPoolEncoder(
+            input_dim=self.d_model,
+            hidden_dim=self.d_model,
+            embedding_dim=self.d_model,
+            base_layers=self.backbone_layers,
+            pool_gnn_layers=self.pool_gnn_layers,
+            num_pooling=self.num_pooling,
+            assign_dim=7,
+            pool_ratio=0.25,
+            dropout=self.dropout,
+            concat=True,
+            final_readout="cls",
         )
 
-        self.post_norm = nn.LayerNorm(self.d_model)
+        # DiffPoolEncoder 的输出维度为 encoder.output_dim
+        self.encoder_out_dim = self.encoder.output_dim
 
-        if config.use_head:
-            self.pred_head = PredHead(self.d_model)  # Number of GCN layers
-
-        self.predictor = nn.Linear(self.d_model, 1)
+        self.predictor = nn.Linear(self.encoder_out_dim, 1)
 
         # Weights initialization
         self.init_weights()
 
     def get_data(self, sample, static_feature):
-        x = sample["ops"].long()
+        x = sample["code"]
         adj = sample["code_adj"]  # Adjacency matrix for graph structure
         adj = adj + torch.eye(adj.size(1), device=adj.device)
         return x, adj
 
     def forward(self, sample, static_feature):
         x, adj = self.get_data(sample, static_feature)
+        depth = sample["op_depth"]
 
-        depth = sample["op_depth"].long()
-        # depth = F.one_hot(depth, num_classes=32).float()
-
-        # 首先是不是编码的问题
+        # 节点特征编码
         x = self.op_embeds(x) + self.depth_embed(depth)
 
-        # 然后才是encoder的问题
-        if self.graph_readout == "cls":
-            num_nodes = adj.size(1)
-            new_adj = torch.ones(
-                adj.size(0), num_nodes + 1, num_nodes + 1, device=adj.device
-            )
-            new_adj[:, 1:, 1:] = adj
-            adj = new_adj
-            cls_token = self.cls_token.expand(x.size(0), 1, self.d_model)
-            x = torch.cat([cls_token, x], dim=1)
+        # 加 CLS 节点：节点 0 为 CLS，和所有节点全连
+        num_nodes = adj.size(1)
+        new_adj = torch.ones(
+            adj.size(0), num_nodes + 1, num_nodes + 1, device=adj.device
+        )
+        new_adj[:, 1:, 1:] = adj
+        adj = new_adj
+        cls_token = self.cls_token.expand(x.size(0), 1, self.d_model)
+        x = torch.cat([cls_token, x], dim=1)
 
-        x = self.prev_norm(x)
-
-        x = self.encoder(x, adj)
-
-        x = self.post_norm(x)
-
-        # Global pooling to obtain a fixed-size graph representation
-        if self.graph_readout == "sum":
-            x = torch.sum(x, dim=1)  # Global sum pooling
-        elif self.graph_readout == "mean":
-            x = torch.mean(x, dim=1)
-        elif self.graph_readout == "max":
-            x = torch.max(x, dim=1)[0]  # Get only the max values
-        elif self.graph_readout == "cls":
-            x = x[:, 0, :]
+        # DiffPoolEncoder 直接输出图级 CLS 表示
+        graph_emb, aux_loss = self.encoder(x, adj, return_all=False)
 
         # Final latency prediction
-        if self.config.use_head:
-            x = self.pred_head(x)
+        latency = self.predictor(graph_emb)  # Predict latency
 
-        latency = self.predictor(x)  # Predict latency
-
-        return latency
+        # 同时返回 DiffPool 的辅助正则项，供外部 loss 使用
+        return latency, aux_loss
 
     def init_weights(self):
         self.apply(self._init_weights)
-        if self.cls_token is not None:
-            nn.init.trunc_normal_(self.cls_token, std=0.02)
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
 
     def _init_weights(self, m):
         if isinstance(m, (nn.Conv2d, nn.Linear)):
@@ -325,5 +331,5 @@ class Net(nn.Module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.Embedding):
-            nn.init.constant_(m.weight, 0)
+            nn.init.constant_(m.weight, 0.02)
             # nn.init.trunc_normal_(m.weight, std=0.02)

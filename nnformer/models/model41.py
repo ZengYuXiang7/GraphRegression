@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn.dense import DenseSAGEConv
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 
 
 class PredHead(nn.Module):

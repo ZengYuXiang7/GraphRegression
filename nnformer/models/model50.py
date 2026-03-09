@@ -1,133 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 
-
-# =========================
-# Dense graph operators (input: x, adj)
-# adj: [N, N] (can be 0/1 or weighted), dense
-# =========================
-
-
-def _add_self_loops(adj: torch.Tensor):
-    n = adj.size(0)
-    return adj + torch.eye(n, device=adj.device, dtype=adj.dtype)
-
-
-def _gcn_norm_adj(adj: torch.Tensor, eps: float = 1e-12):
-    # A_hat = A + I
-    a = _add_self_loops(adj)
-    deg = a.sum(dim=1)  # [N]
-    deg_inv_sqrt = (deg + eps).pow(-0.5)
-    d_inv_sqrt = torch.diag(deg_inv_sqrt)
-    return d_inv_sqrt @ a @ d_inv_sqrt  # [N, N]
-
-
-def _row_norm_adj(adj: torch.Tensor, eps: float = 1e-12):
-    # Row-normalize (mean aggregator style)
-    deg = adj.sum(dim=1, keepdim=True)  # [N,1]
-    return adj / (deg + eps)
-
-
-class DenseGCNConv(nn.Module):
-    def __init__(self, in_channels, out_channels, bias=True):
-        super().__init__()
-        self.lin = nn.Linear(in_channels, out_channels, bias=bias)
-
-    def reset_parameters(self):
-        self.lin.reset_parameters()
-
-    def forward(self, x, adj):
-        a_norm = _gcn_norm_adj(adj)
-        x = a_norm @ x
-        x = self.lin(x)
-        return x
-
-
-class DenseSAGEConv(nn.Module):
-    # simple mean aggregation: out = W_self x + W_neigh (A_row @ x)
-    def __init__(self, in_channels, out_channels, bias=True):
-        super().__init__()
-        self.lin_self = nn.Linear(in_channels, out_channels, bias=bias)
-        self.lin_neigh = nn.Linear(in_channels, out_channels, bias=bias)
-
-    def reset_parameters(self):
-        self.lin_self.reset_parameters()
-        self.lin_neigh.reset_parameters()
-
-    def forward(self, x, adj):
-        a_row = _row_norm_adj(adj)
-        neigh = a_row @ x
-        return self.lin_self(x) + self.lin_neigh(neigh)
-
-
-class DenseGATConv(nn.Module):
-    # Dense multi-head GAT (O(N^2)), masked by adj > 0
-    def __init__(
-        self,
-        in_channels,
-        out_channels,
-        heads=1,
-        concat=True,
-        negative_slope=0.2,
-        bias=True,
-    ):
-        super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.heads = heads
-        self.concat = concat
-        self.negative_slope = negative_slope
-
-        self.lin = nn.Linear(in_channels, heads * out_channels, bias=False)
-        self.att_l = nn.Parameter(torch.empty(heads, out_channels))
-        self.att_r = nn.Parameter(torch.empty(heads, out_channels))
-
-        if bias:
-            if concat:
-                self.bias = nn.Parameter(torch.zeros(heads * out_channels))
-            else:
-                self.bias = nn.Parameter(torch.zeros(out_channels))
-        else:
-            self.register_parameter("bias", None)
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.xavier_uniform_(self.lin.weight)
-        nn.init.xavier_uniform_(self.att_l)
-        nn.init.xavier_uniform_(self.att_r)
-        if self.bias is not None:
-            nn.init.zeros_(self.bias)
-
-    def forward(self, x, adj):
-        # x: [N, Fin], adj: [N, N]
-        N = x.size(0)
-        h = self.lin(x).view(N, self.heads, self.out_channels)  # [N,H,C]
-
-        # e_ij = LeakyReLU( a_l^T h_i + a_r^T h_j )
-        el = (h * self.att_l.unsqueeze(0)).sum(dim=-1)  # [N,H]
-        er = (h * self.att_r.unsqueeze(0)).sum(dim=-1)  # [N,H]
-        e = el.unsqueeze(1) + er.unsqueeze(0)  # [N,N,H]
-        e = F.leaky_relu(e, negative_slope=self.negative_slope)
-
-        # mask: only edges where adj > 0
-        mask = adj > 0
-        e = e.masked_fill(~mask.unsqueeze(-1), float("-inf"))
-
-        alpha = F.softmax(e, dim=1)  # softmax over j neighbors, [N,N,H]
-        out = torch.einsum("ijh,jhc->ihc", alpha, h)  # [N,H,C]
-
-        if self.concat:
-            out = out.reshape(N, self.heads * self.out_channels)  # [N,H*C]
-        else:
-            out = out.mean(dim=1)  # [N,C]
-
-        if self.bias is not None:
-            out = out + self.bias
-        return out
-
+from torch_geometric.nn.dense import DenseGATConv, DenseGCNConv, DenseSAGEConv
 
 # =========================
 # Experts (Dense)
@@ -336,27 +212,26 @@ class MoELayer(nn.Module):
 
 
 class MoEFFNLayer(nn.Module):
-    def __init__(self, hidden):
+    def __init__(self, hidden, dropout):
         super(MoEFFNLayer, self).__init__()
-        self.GLUList = nn.ModuleList(
-            [
-                GLULayer(hidden, "SwishGLU"),
-                GLULayer(hidden, "GEGLU"),
-                GLULayer(hidden, "ReGLU"),
-            ]
-        )
-        self.FFNGate = nn.Linear(hidden, 3)
+        self.norm = nn.LayerNorm(hidden)
+        self.fc1 = nn.Linear(hidden, hidden * 4)
+        self.fc2 = nn.Linear(hidden * 4, hidden)
+        self.dropout = dropout
 
     def reset_parameters(self):
-        self.FFNGate.reset_parameters()
-        for layer in self.GLUList:
-            layer.reset_parameters()
+        self.fc1.reset_parameters()
+        self.fc2.reset_parameters()
 
     def forward(self, x):
-        gate = F.gumbel_softmax(self.FFNGate(x), tau=1, hard=True)
-        x = torch.stack([layer(x) for layer in self.GLUList], dim=2)
-        x = torch.sum(x * gate.unsqueeze(-1), dim=2)
-        return x
+        res = x
+        x = self.norm(x)
+        x = self.fc1(x)
+        x = F.gelu(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.fc2(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        return res + x
 
 
 class MoE(nn.Module):
@@ -372,25 +247,25 @@ class MoE(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        self.MoEFFNLayers = MoEFFNLayer(hidden)
+        self.MoEFFNLayers = nn.ModuleList(
+            [MoEFFNLayer(hidden, dropout) for _ in range(n_layers)]
+        )
 
         self.start = nn.Linear(in_dim, hidden)
 
-        self.theta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
-        self.norm = nn.LayerNorm(hidden)
 
     def reset_parameters(self):
         self.start.reset_parameters()
         for layer in self.MoELayers:
             layer.reset_parameters()
-        self.MoEFFNLayers.reset_parameters()
+        for layer in self.MoEFFNLayers:
+            layer.reset_parameters()
 
     # ======= 改这里：输入只有 x 和 adj =======
     def forward(self, x, adj):
         # Start-Linear
         x = self.start(x)
         initial_x = F.dropout(F.relu(x), p=self.dropout, training=self.training)
-        res = initial_x
 
         # MoE layers
         for i, layer in enumerate(self.MoELayers):
@@ -398,11 +273,7 @@ class MoE(nn.Module):
                 x = layer(initial_x, adj)
             else:
                 x = layer(x, adj)
-
-        # MoE FFN
-        x = self.MoEFFNLayers(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.norm((1 - self.theta) * x + self.theta * res)
+            x = self.MoEFFNLayers[i](x)
 
         return x
 

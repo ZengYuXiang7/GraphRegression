@@ -23,5 +23,9 @@ def build_model(name: str, args: Any) -> Any:
     return cls(args)
 
 
+def get_model(args):
+    return build_model(args.model, args)
+
+
 def list_models() -> list[str]:
     return sorted(_MODEL_REGISTRY.keys())

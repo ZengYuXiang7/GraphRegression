@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import DenseGATConv
 from nnformer.models.encoders.neuralformer import EncoderBlock
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 from typing import List, Optional
 from torch import Tensor
 import math

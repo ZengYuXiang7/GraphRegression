@@ -51,11 +51,11 @@ class NasbenchDataset(Dataset):
         if os.path.exists(cache_file):
             # If cache file exists, load it
             print(f"Loading cached data from {cache_file}")
-            return torch.load(cache_file)
+            return torch.load(cache_file, weights_only=False)
 
         # If cache file does not exist, process data
         data_file = self.data_path
-        datas = [torch.load(data_file)]
+        datas = [torch.load(data_file, weights_only=False)]
         loaded_data = []
         data_num = (int(self.percent) if self.percent > 1 else int(len(datas[0]) * self.percent))
 

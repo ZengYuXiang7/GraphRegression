@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mpmath.libmp import normalize
 from torch_geometric.nn import DenseGATConv  # Importing GAT layer
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 
 
 class PredHead(nn.Module):

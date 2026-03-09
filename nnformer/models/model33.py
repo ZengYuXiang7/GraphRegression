@@ -15,7 +15,7 @@ from torch_geometric.utils import (
 )
 
 
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 from nnformer.models.layer_init import init_tensor
 
 

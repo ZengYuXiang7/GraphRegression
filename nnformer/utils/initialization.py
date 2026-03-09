@@ -10,28 +10,9 @@ from nnformer.optim.scheduler import (
 from nnformer.models.encoders import NNFormer
 from nnformer.models.losses import NARLoss
 from .utils import model_info
-# from parallel import DataParallelModel, DataParallelCriterion
-from nnformer.models.registry import build_model
 
-def get_model(args):
-    if args.model == 'nnformer':
-        net = NNFormer(
-            depths=args.depths,
-            in_chans=args.in_chans,
-            dim=args.graph_d_model,
-            n_head=args.graph_n_head,
-            mlp_ratio=args.graph_d_ff // args.graph_d_model,
-            act_layer=args.act_function,
-            dropout=args.dropout,
-            droppath=args.drop_path_rate,
-            avg_tokens=args.avg_tokens,
-            class_token=args.class_token,
-            depth_embed=args.depth_embed,
-            dataset=args.dataset,
-        )
-        return net
-    else:
-        return build_model(args.model, args)
+# from parallel import DataParallelModel, DataParallelCriterion
+from mytools.registry import get_model
 
 
 def init_layers(args, logger):
@@ -49,7 +30,7 @@ def init_layers(args, logger):
 
     # Model EMA
 
-    return net, None, loss
+    return net, loss
 
 
 def init_optim(args, net, nbatches, warm_step=0.1):
@@ -65,7 +46,7 @@ def init_optim(args, net, nbatches, warm_step=0.1):
     return optimizer, lr_scheduler
 
 
-def auto_load_model(args, model, model_ema=None, optimizer=None, scheduler=None):
+def auto_load_model(args, model, optimizer=None, scheduler=None):
     if args.do_train:
         if args.resume:
             if args.resume.startswith("https"):
@@ -73,18 +54,11 @@ def auto_load_model(args, model, model_ema=None, optimizer=None, scheduler=None)
                     args.resume, map_location="cpu", check_hash=True
                 )
             else:
-                checkpoint = torch.load(args.resume, map_location="cpu", weights_only=True)
+                checkpoint = torch.load(
+                    args.resume, map_location="cpu", weights_only=True
+                )
             model.load_state_dict(checkpoint["state_dict"])
             print("Resume checkpoint %s" % args.resume)
-            if hasattr(args, "model_ema") and args.model_ema:
-                if "model_ema" in checkpoint.keys():
-                    model_ema.ema.load_state_dict(checkpoint["state_dict_ema"])
-                else:
-                    pretrained_dict = {
-                        key.replace("module.", ""): value
-                        for key, value in checkpoint["state_dict"].items()
-                    }
-                    model_ema.ema.load_state_dict(pretrained_dict)
             if args.finetuning:
                 print("Start fine-tuning from 0-th epoch/iter!")
                 return 0
@@ -99,23 +73,24 @@ def auto_load_model(args, model, model_ema=None, optimizer=None, scheduler=None)
                     start_id = checkpoint["iter"]
         else:
             start_id = 0
-        print("Start training from %d-th epoch/iter!" % (start_id))
+        # print("Start training from %d-th epoch/iter!" % (start_id))
         return start_id
 
     if args.pretrained_path:
         checkpoint = torch.load(
-            args.pretrained_path, map_location="{}".format(args.device)
+            args.pretrained_path,
+            map_location="{}".format(args.device),
+            weights_only=False,
         )
-        if "state_dict_ema" in checkpoint.keys():
-            model.load_state_dict(checkpoint["state_dict_ema"])
-        else:
-            pretrained_dict = {
-                key.replace("module.", ""): value
-                for key, value in checkpoint["state_dict"].items()
-            }
-            model.load_state_dict(pretrained_dict)
+        pretrained_dict = {
+            key.replace("module.", ""): value
+            for key, value in checkpoint["state_dict"].items()
+        }
+        model.load_state_dict(pretrained_dict)
         print(
             torch.load(
-                args.pretrained_path, map_location="{}".format(args.device)
+                args.pretrained_path,
+                map_location="{}".format(args.device),
+                weights_only=False,
             )["config"]
         )

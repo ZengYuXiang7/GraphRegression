@@ -9,6 +9,7 @@ from losses import RankLossPack
 from nnformer.utils import *
 from config import parse_args
 from nnformer.data_process import init_dataloader
+from mytools.utils import *
 from tqdm import *
 
 
@@ -69,7 +70,7 @@ def train(config, logger):
     train_loader, val_loader = init_dataloader(config, logger)
     n_batches = len(train_loader)
     # Init Model
-    net, model_ema, criterion = init_layers(config, logger)
+    net, criterion = init_layers(config, logger)
 
     config.save_path = normalize_save_path(config.save_path)
     os.makedirs(config.save_path, exist_ok=True)
@@ -77,13 +78,12 @@ def train(config, logger):
     # Optimizer
     optimizer, scheduler = init_optim(config, net, n_batches)
     # Auto Resume
-    start_epoch_idx = auto_load_model(config, net, model_ema, optimizer, scheduler)
+    start_epoch_idx = auto_load_model(config, net, optimizer, scheduler)
 
     # Init Value
     best_tau, best_mape, best_error = -99, 1e5, 0
     best_epoch = -1
 
-    rank_loss_function = RankLossPack(config)
     early_stop_counter = 0
     stop_training = False
     tau_history = []
@@ -113,7 +113,13 @@ def train(config, logger):
                 for k, v in batch_data.items():
                     batch_data[k] = v.to(config.device)
                 gt = batch_data["val_acc_avg"]
-                logits = net(batch_data, None)
+
+                # 兼容仅返回预测值的旧模型，以及 (logits, aux_loss) 的 DiffPool 模型
+                out = net(batch_data, None)
+                if isinstance(out, tuple):
+                    logits, aux_loss = out
+                else:
+                    logits, aux_loss = out, 0.0
 
             elif config.dataset == "nnlqp":
                 codes, gt, sf = (
@@ -126,20 +132,19 @@ def train(config, logger):
                     gt.to(config.device),
                     sf.to(config.device),
                 )
-                logits = net(None, None, codes, sf)
+                out = net(None, None, codes, sf)
+                if isinstance(out, tuple):
+                    logits, aux_loss = out
+                else:
+                    logits, aux_loss = out, 0.0
 
             loss_dict = criterion(logits, gt)
-            loss = loss_dict["loss"]
-
-            # rank_loss = rank_loss_function(logits, gt)
-            # loss += rank_loss
+            
+            loss = loss_dict["loss"] + 1e-3 * aux_loss
 
             loss.backward()
             optimizer.step()
             scheduler.step()
-
-            if model_ema is not None:
-                model_ema.update(net)
 
             ps = logits.detach().cpu().numpy()[:, 0].tolist()
             gs = gt.detach().cpu().numpy()[:, 0].tolist()
@@ -257,18 +262,22 @@ def infer(dataloader, net, dataset, device=None, isTest=False):
             if device != None:
                 for k, v in batch_data.items():
                     batch_data[k] = v.to(device)
-            logits = net(batch_data, None)
+            out = net(batch_data, None)
+            if isinstance(out, tuple):
+                logits, aux_loss = out
+            else:
+                logits, aux_loss = out, 0.0
         elif dataset == "nnlqp":
             codes, gt, sf = (
                 batch_data[0]["netcode"],
                 batch_data[0]["cost"],
                 batch_data[1],
             )
-            logits = (
-                net(None, None, codes.to(device), sf.to(device))
-                if device != None
-                else net(None, None, codes, None)
-            )
+            out = net(None, None, codes.to(device), sf.to(device))
+            if isinstance(out, tuple):
+                logits, aux_loss = out
+            else:
+                logits, aux_loss = out, 0.0
         pre = (
             torch.cat([r.to(gt.device) for r in logits], dim=0)
             if isinstance(logits, list)
@@ -366,92 +375,6 @@ def run_exp(runid, config):
         "TrainTimeSec": train_stats.get("train_time_sec"),
     }
 
-
-def merge_config_into_args(
-    args, config, *, only_existing=False, skip_none=True, verbose=False
-):
-    """
-    用 config 覆盖 args，并打印：
-      - overwritten: args 原来有该字段且值发生变化
-      - added: args 原来没有该字段，新添加
-      - unchanged: args 原来有该字段，但值相同（可选打印）
-      - skipped_none: config 中为 None 被跳过（可选打印）
-      - skipped_missing: only_existing=True 且 args 没有该字段被跳过（可选打印）
-    """
-
-    def to_dict(x):
-        if isinstance(x, dict):
-            return x
-        if hasattr(x, "__dict__"):
-            return vars(x)
-        raise TypeError(f"Unsupported type: {type(x)}")
-
-    def has_key(obj, k):
-        return (k in obj) if isinstance(obj, dict) else hasattr(obj, k)
-
-    def get_val(obj, k, default=None):
-        return (
-            obj.get(k, default) if isinstance(obj, dict) else getattr(obj, k, default)
-        )
-
-    def set_val(obj, k, v):
-        if isinstance(obj, dict):
-            obj[k] = v
-        else:
-            setattr(obj, k, v)
-
-    cdict = to_dict(config)
-
-    overwritten = []  # (k, old, new)
-    added = []  # (k, new)
-    unchanged = []  # (k, val)
-    skipped_none = []  # (k)
-    skipped_missing = []  # (k)
-
-    for k, v in cdict.items():
-        if skip_none and v is None:
-            skipped_none.append(k)
-            continue
-
-        exists = has_key(args, k)
-        if only_existing and not exists:
-            skipped_missing.append(k)
-            continue
-
-        if exists:
-            old = get_val(args, k)
-            if old != v:
-                overwritten.append((k, old, v))
-            else:
-                unchanged.append((k, v))
-        else:
-            added.append((k, v))
-
-        set_val(args, k, v)
-
-    if verbose:
-        if overwritten:
-            print(f"[merge] overwritten ({len(overwritten)}):")
-            for k, old, new in overwritten:
-                print(f"  - {k}: {old} -> {new}")
-        else:
-            print("[merge] overwritten (0)")
-
-        if added:
-            print(f"[merge] added ({len(added)}):")
-            for k, new in added:
-                print(f"  + {k}: {new}")
-        else:
-            print("[merge] added (0)")
-
-    summary = {
-        "overwritten": overwritten,
-        "added": added,
-        "unchanged": unchanged,
-        "skipped_none": skipped_none,
-        "skipped_missing": skipped_missing,
-    }
-    return args
 
 
 if __name__ == "__main__":

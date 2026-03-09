@@ -1,7 +1,6 @@
 # coding : utf-8
 # Author : Yuxiang Zeng
 import os
-import sys
 import shutil
 import torch
 import random
@@ -11,46 +10,18 @@ import collections
 import numpy as np
 import pickle
 from main import run_exp
-
+from mytools.utils import *
 torch.set_default_dtype(torch.float32)
 
-# 在这里写下任何实验模板所产生的metrics
-def RunOnce(runid, config):
-    remove_pycache_dirs()
-    # 这里写单次实验的代码
-    # results = {"accuracy": random.random(), "mape": random.random()}
-    results = run_exp(runid=runid, config=config)
-    return results
 
-
-def build_parser() -> argparse.ArgumentParser:
-    """只负责声明已知参数"""
+def build_parser() -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser()
-    default_device = "mps" if sys.platform == "darwin" else "cuda"
     parser.add_argument("--rounds", default=2, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
-    parser.add_argument("--model", default="model50", type=str)
-    parser.add_argument("--device", default=default_device, type=str)
+    parser.add_argument("--model", default="model51", type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
     return args, unknown_args
-
-
-def remove_pycache_dirs(project_root=None):
-    root = project_root or os.path.dirname(os.path.abspath(__file__))
-    removed = []
-    for current_root, dirnames, _ in os.walk(root, topdown=True):
-        pycache_paths = [
-            os.path.join(current_root, name)
-            for name in dirnames
-            if name == "__pycache__"
-        ]
-        for path in pycache_paths:
-            shutil.rmtree(path, ignore_errors=True)
-            removed.append(path)
-        if pycache_paths:
-            dirnames[:] = [d for d in dirnames if d != "__pycache__"]
-    return removed
 
 
 def inject_unknown_args(
@@ -90,8 +61,114 @@ def get_config():
     return args
 
 
+def merge_config_into_args(
+    args, config, *, only_existing=False, skip_none=True, verbose=True
+):
+    """
+    用 config 覆盖 args，并打印：
+      - overwritten: args 原来有该字段且值发生变化
+      - added: args 原来没有该字段，新添加
+      - unchanged: args 原来有该字段，但值相同（可选打印）
+      - skipped_none: config 中为 None 被跳过（可选打印）
+      - skipped_missing: only_existing=True 且 args 没有该字段被跳过（可选打印）
+    """
+
+    def to_dict(x):
+        if isinstance(x, dict):
+            return x
+        if hasattr(x, "__dict__"):
+            return vars(x)
+        raise TypeError(f"Unsupported type: {type(x)}")
+
+    def has_key(obj, k):
+        return (k in obj) if isinstance(obj, dict) else hasattr(obj, k)
+
+    def get_val(obj, k, default=None):
+        return (
+            obj.get(k, default) if isinstance(obj, dict) else getattr(obj, k, default)
+        )
+
+    def set_val(obj, k, v):
+        if isinstance(obj, dict):
+            obj[k] = v
+        else:
+            setattr(obj, k, v)
+
+    cdict = to_dict(config)
+
+    overwritten = []
+    added = []
+    unchanged = []
+    skipped_none = []
+    skipped_missing = []
+
+    for k, v in cdict.items():
+        if skip_none and v is None:
+            skipped_none.append(k)
+            continue
+
+        exists = has_key(args, k)
+        if only_existing and not exists:
+            skipped_missing.append(k)
+            continue
+
+        if exists:
+            old = get_val(args, k)
+            if old != v:
+                overwritten.append((k, old, v))
+            else:
+                unchanged.append((k, v))
+        else:
+            added.append((k, v))
+
+        set_val(args, k, v)
+
+    if verbose:
+        if overwritten:
+            print(f"[merge] overwritten ({len(overwritten)}):")
+            for k, old, new in overwritten:
+                print(f"  - {k}: {old} -> {new}")
+        else:
+            print("[merge] overwritten (0)")
+
+        if added:
+            print(f"[merge] added ({len(added)}):")
+            for k, new in added:
+                print(f"  + {k}: {new}")
+        else:
+            print("[merge] added (0)")
+
+        if unchanged:
+            print(
+                f"[merge] unchanged ({len(unchanged)}): "
+                + ", ".join(k for k, _ in unchanged)
+            )
+        else:
+            print("[merge] unchanged (0)")
+
+        if skipped_none:
+            print(
+                f"[merge] skipped_none ({len(skipped_none)}): "
+                + ", ".join(skipped_none)
+            )
+        if skipped_missing:
+            print(
+                f"[merge] skipped_missing ({len(skipped_missing)}): "
+                + ", ".join(skipped_missing)
+            )
+
+    summary = {
+        "overwritten": overwritten,
+        "added": added,
+        "unchanged": unchanged,
+        "skipped_none": skipped_none,
+        "skipped_missing": skipped_missing,
+    }
+    return args, summary
+
+
 def get_experiment_name(config):
-    exclude = {"rounds", "track"}  # 不写进文件名的字段
+    exclude = {"rounds", "track", "debug"}  # 不写进文件名的字段
 
     # 收集字段
     detail_fields = {}
@@ -164,7 +241,6 @@ def save_result(metrics, log_filename, config):
         pickle.dump(result, f)
 
 
-# 时间种子
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -177,10 +253,17 @@ def set_seed(seed):
     return True
 
 
+def RunOnce(runid, config):
+    remove_pycache_dirs()
+    results = run_exp(runid=runid, config=config)
+    return results
+
+
 def RunExperiments(config):
     if config.debug:
         config.rounds = 1
         config.epochs = 1
+
     log("")
     log_filename, exper_detail = get_experiment_name(config)
     metrics = collections.defaultdict(list)
@@ -201,113 +284,6 @@ def RunExperiments(config):
     save_result(metrics, log_filename, config)
     log("*" * 20 + "Experiment Success" + "*" * 20)
     return metrics
-
-
-def merge_config_into_args(
-    args, config, *, only_existing=False, skip_none=True, verbose=True
-):
-    """
-    用 config 覆盖 args，并打印：
-      - overwritten: args 原来有该字段且值发生变化
-      - added: args 原来没有该字段，新添加
-      - unchanged: args 原来有该字段，但值相同（可选打印）
-      - skipped_none: config 中为 None 被跳过（可选打印）
-      - skipped_missing: only_existing=True 且 args 没有该字段被跳过（可选打印）
-    """
-
-    def to_dict(x):
-        if isinstance(x, dict):
-            return x
-        if hasattr(x, "__dict__"):
-            return vars(x)
-        raise TypeError(f"Unsupported type: {type(x)}")
-
-    def has_key(obj, k):
-        return (k in obj) if isinstance(obj, dict) else hasattr(obj, k)
-
-    def get_val(obj, k, default=None):
-        return (
-            obj.get(k, default) if isinstance(obj, dict) else getattr(obj, k, default)
-        )
-
-    def set_val(obj, k, v):
-        if isinstance(obj, dict):
-            obj[k] = v
-        else:
-            setattr(obj, k, v)
-
-    cdict = to_dict(config)
-
-    overwritten = []  # (k, old, new)
-    added = []  # (k, new)
-    unchanged = []  # (k, val)
-    skipped_none = []  # (k)
-    skipped_missing = []  # (k)
-
-    for k, v in cdict.items():
-        if skip_none and v is None:
-            skipped_none.append(k)
-            continue
-
-        exists = has_key(args, k)
-        if only_existing and not exists:
-            skipped_missing.append(k)
-            continue
-
-        if exists:
-            old = get_val(args, k)
-            if old != v:
-                overwritten.append((k, old, v))
-            else:
-                unchanged.append((k, v))
-        else:
-            added.append((k, v))
-
-        set_val(args, k, v)
-
-    if verbose:
-        if overwritten:
-            print(f"[merge] overwritten ({len(overwritten)}):")
-            for k, old, new in overwritten:
-                print(f"  - {k}: {old} -> {new}")
-        else:
-            print("[merge] overwritten (0)")
-
-        if added:
-            print(f"[merge] added ({len(added)}):")
-            for k, new in added:
-                print(f"  + {k}: {new}")
-        else:
-            print("[merge] added (0)")
-
-        # 下面这些你不想太吵可以注释掉
-        if unchanged:
-            print(
-                f"[merge] unchanged ({len(unchanged)}): "
-                + ", ".join(k for k, _ in unchanged)
-            )
-        else:
-            print("[merge] unchanged (0)")
-
-        if skipped_none:
-            print(
-                f"[merge] skipped_none ({len(skipped_none)}): "
-                + ", ".join(skipped_none)
-            )
-        if skipped_missing:
-            print(
-                f"[merge] skipped_missing ({len(skipped_missing)}): "
-                + ", ".join(skipped_missing)
-            )
-
-    summary = {
-        "overwritten": overwritten,
-        "added": added,
-        "unchanged": unchanged,
-        "skipped_none": skipped_none,
-        "skipped_missing": skipped_missing,
-    }
-    return args, summary
 
 
 if __name__ == "__main__":

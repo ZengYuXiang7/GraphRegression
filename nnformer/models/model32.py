@@ -15,7 +15,7 @@ from torch_geometric.utils import (
 )
 
 
-from nnformer.models.registry import register_model
+from mytools.registry import register_model
 from nnformer.models.layer_init import init_tensor
 
 
@@ -450,7 +450,7 @@ class PredictHead(nn.Module):
         self.d_model = int(d_model)
         self.norm_sf = bool(norm_sf)
         self.with_sf = with_sf
-        
+
         if self.norm_sf:
             self.sf_linear = nn.Linear(4, self.d_model)
             self.sf_drop = nn.Dropout(dropout)
@@ -461,7 +461,6 @@ class PredictHead(nn.Module):
                 sf_hidden = 4
             else:
                 sf_hidden = 0
-                
 
         in_dim = self.d_model + sf_hidden
         self.fc_1 = nn.Linear(in_dim, fc_hidden)
