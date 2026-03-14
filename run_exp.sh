@@ -70,11 +70,8 @@
 
 # 2026年03月01日22:40:11 判断一下2025WWW的一个idea
 # python generate_data.py --embed_type onehot_op
-# model_version="model50"
-# percents="100 172 424 4236"
-# for percent in $percents; do            
-#     python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2 --gcn_layers 6 --embed_type onehot_op
-# done
+# 读文章去ICLR查查新技术，看看是否有新的思路
+
 
 # # 2026年02月26日22:22:33 采用了nape的编码方案，探索一下是不是编码方案的问题
 # # 对ffn改进成moe ffn的对角线和全局节点断连接 
@@ -91,9 +88,12 @@
 # done
 
 
-# 读文章去ICLR查查新技术，看看是否有新的思路
-model_version="model51"
+
+
+# 2026年03月10日15:30:00  经过auto_exp搜索，最佳配置为 gcn=6, pool=3 (在4236样本下)
+# 实验3：手动指定最佳配置
 percents="100 172 424 4236"
-for percent in $percents; do            
-    python Experiment.py --model $model_version --dataset nasbench101 --percent $percent --graph_n_head 2 --try_exp 2 --gcn_layers 6 --embed_type onehot_op
+model_version="model52"
+for percent in $percents; do
+    python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --gcn_layers 6 --pool_gnn_layers 3 --embed_type onehot_op
 done
