@@ -88,12 +88,45 @@
 # done
 
 
+# python generate_data.py --embed_type onehot_op
+# percents="100 172 424 4236"
+# model_version="model56"
+# for percent in $percents; do
+#     python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --d_model 180 --gcn_layers 6 --graph_n_head 6 --embed_type onehot_op --use_aux_loss 0
+# done
+
+# percents="100 172 424 4236"
+# model_version="model56"
+# for percent in $percents; do
+#     python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --d_model 180 --gcn_layers 10 --graph_n_head 6 --embed_type onehot_op --use_aux_loss 0
+# done
 
 
-# 2026年03月10日15:30:00  经过auto_exp搜索，最佳配置为 gcn=6, pool=3 (在4236样本下)
-# 实验3：手动指定最佳配置
-percents="100 172 424 4236"
-model_version="model52"
-for percent in $percents; do
-    python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --gcn_layers 6 --pool_gnn_layers 3 --embed_type onehot_op
-done
+# percents="100 172 424 4236"
+# model_version="model56"
+# for percent in $percents; do
+#     python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --d_model 180 --gcn_layers 6 --graph_n_head 6 --embed_type onehot_op --use_aux_loss 1
+# done
+
+# percents="100 172 424 4236"
+# model_version="model56"
+# for percent in $percents; do
+#     python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --d_model 180 --gcn_layers 10 --graph_n_head 6 --embed_type onehot_op --use_aux_loss 1
+# done
+
+
+########################################################################
+# percents="100 172 424 4236"
+
+# percents="100"
+# model_version="model56"
+# for percent in $percents; do
+#     python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --d_model 180 --gcn_layers 10 --graph_n_head 6 --embed_type onehot_op --graph_readout att
+# done
+
+# model57: 多态 score 融合 (per-head 加性结构偏置, gamma 初始为 0)
+# percents="100"
+# model_version="model57"
+# for percent in $percents; do
+#     python Experiment.py --model "$model_version" --dataset nasbench101 --percent "$percent" --d_model 180 --gcn_layers 10 --graph_n_head 6 --embed_type onehot_op --graph_readout att
+# done

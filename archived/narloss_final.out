@@ -1,0 +1,39 @@
+========================================================
+  Model56 NARLoss 最终配置 四场景实验
+  2026-03-22 08:40:10
+  lambda_mse=1.0  lambda_rank=0.8  lambda_consistency=0.0
+  percent={100, 172, 424, 4236} × 3 rounds
+========================================================
+
+[08:40:10] percent=100  rounds=3
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-22 08:40:12 INFO: Totally 1 GPUs are available.
+2026-03-22 08:40:12 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, test_freq=1, tqdm=0, try_exp=-1, rounds=3, debug=0)
+2026-03-22 08:40:12 INFO: Building dataset train from .pth file
+2026-03-22 08:40:12 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-22 08:40:12 INFO: Building dataset val from .pth file
+2026-03-22 08:40:12 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+2026-03-22 08:57:59 INFO: Saved tau curve to ./results/tau/20260322085759_model56_100.pdf
+2026-03-22 08:57:59 INFO: Training Finished | Best KT 0.71236 | Best MAPE  0.02525917 | Best ErrB  0.66406250
+2026-03-22 08:57:59 INFO: Building dataset test from .pth file
+2026-03-22 08:58:40 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 40.92s
+2026-03-22 08:59:37 INFO: [EVAL-best]  TrainKT  0.71236 | KT  0.70166, MAPE  0.03208, ErrBnd(0.01)  0.65849
+2026-03-22 08:59:39 INFO: Totally 1 GPUs are available.
+2026-03-22 08:59:39 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, test_freq=1, tqdm=0, try_exp=-1, rounds=3, debug=0)
+2026-03-22 08:59:39 INFO: Building dataset train from .pth file
+2026-03-22 08:59:39 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-22 08:59:39 INFO: Building dataset val from .pth file
+2026-03-22 08:59:39 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+2026-03-22 09:14:27 INFO: Saved tau curve to ./results/tau/20260322091427_model56_100.pdf
+2026-03-22 09:14:27 INFO: Training Finished | Best KT 0.70580 | Best MAPE  0.02536466 | Best ErrB  0.65332031
+2026-03-22 09:14:27 INFO: Building dataset test from .pth file
+2026-03-22 09:15:08 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 40.73s
+2026-03-22 09:16:07 INFO: [EVAL-best]  TrainKT  0.70580 | KT  0.69331, MAPE  0.03255, ErrBnd(0.01)  0.63899
+2026-03-22 09:16:09 INFO: Totally 1 GPUs are available.
+2026-03-22 09:16:09 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, test_freq=1, tqdm=0, try_exp=-1, rounds=3, debug=0)
+2026-03-22 09:16:09 INFO: Building dataset train from .pth file
+2026-03-22 09:16:09 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-22 09:16:09 INFO: Building dataset val from .pth file
+2026-03-22 09:16:09 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Terminated

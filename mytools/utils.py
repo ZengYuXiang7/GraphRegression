@@ -104,3 +104,36 @@ def remove_pycache_dirs(project_root=None):
         if pycache_paths:
             dirnames[:] = [d for d in dirnames if d != "__pycache__"]
     return removed
+
+
+
+def get_experiment_name(config):
+    exclude = {"rounds", "track", "debug", "epochs"}  # 不写进文件名的字段
+
+    # 收集字段
+    source = config if isinstance(config, dict) else vars(config)
+    detail_fields = {}
+    for k, v in source.items():
+        if k in exclude:
+            continue
+        detail_fields[k] = v
+
+    # 文件名清洗：避免空格/特殊字符
+    def safe(x):
+        s = str(x)
+        return "".join(ch if (ch.isalnum() or ch in "._-") else "-" for ch in s)
+
+    # 1) 固定前缀顺序：dataset、model（你要哪个在前就调换这个列表顺序）
+    front_keys = ["dataset", "model"]
+    front_items = [(k, detail_fields.pop(k)) for k in front_keys if k in detail_fields]
+
+    # 2) 其余字段按 key 字典序排序
+    rest_items = sorted(detail_fields.items(), key=lambda kv: str(kv[0]))
+
+    # 3) 合并
+    items = front_items + rest_items
+
+    exper_detail = ", ".join(f"{k} : {v}" for k, v in items)
+    log_filename = "|".join(f"{k.replace('_','')}__{safe(v)}" for k, v in items)
+    print(f"\033[1;31m{log_filename}\033[0m")
+    return log_filename, exper_detail

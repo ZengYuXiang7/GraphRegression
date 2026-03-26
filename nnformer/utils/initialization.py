@@ -18,13 +18,16 @@ from mytools.registry import get_model
 def init_layers(args, logger):
     # Model
     net = get_model(args)
-
+    print(f"Model : {args.model}")
     if not args.do_train:
         return net
 
-    loss = NARLoss(args.lambda_mse, args.lambda_rank, args.lambda_consistency)
+    loss = NARLoss(
+        args.lambda_mse,
+        args.lambda_rank,
+        args.lambda_consistency,
+    )
     # model_info(net, logger)
-    print(net)
     net = net.to(args.device)
     loss = loss.to(args.device)
 
@@ -33,8 +36,11 @@ def init_layers(args, logger):
     return net, loss
 
 
+#
 def init_optim(args, net, nbatches, warm_step=0.1):
+    # 2 4 6 35
     optimizer = create_optimizer_v2(net, **optimizer_kwargs(args))
+    configured_warmup_steps = getattr(args, "warmup_steps", -1)
     lr_scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(
         optimizer,
         num_warmup_steps=warm_step * nbatches * args.epochs,
@@ -42,7 +48,9 @@ def init_optim(args, net, nbatches, warm_step=0.1):
         num_cycles=1,
         min_ratio=args.min_ratio,
     )
-    print("warmup steps:", warm_step * nbatches * args.epochs)
+    print(f"warm_step={warm_step}, nbatches={nbatches}, epochs={args.epochs}")
+    print(f"warmup_steps = {warm_step * nbatches * args.epochs}")
+    print(f"total_steps = {nbatches * args.epochs}")
     return optimizer, lr_scheduler
 
 
@@ -87,10 +95,10 @@ def auto_load_model(args, model, optimizer=None, scheduler=None):
             for key, value in checkpoint["state_dict"].items()
         }
         model.load_state_dict(pretrained_dict)
-        print(
-            torch.load(
-                args.pretrained_path,
-                map_location="{}".format(args.device),
-                weights_only=False,
-            )["config"]
-        )
+        # print(
+        # torch.load(
+        # args.pretrained_path,
+        # map_location="{}".format(args.device),
+        # weights_only=False,
+        # )["config"]
+        # )

@@ -11,6 +11,7 @@ import numpy as np
 import pickle
 from main import run_exp
 from mytools.utils import *
+
 torch.set_default_dtype(torch.float32)
 
 
@@ -18,7 +19,7 @@ def build_parser() -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rounds", default=2, type=int)
     parser.add_argument("--dataset", default="nasbench101", type=str)
-    parser.add_argument("--model", default="model51", type=str)
+    parser.add_argument("--model", default="model55", type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
     return args, unknown_args
@@ -165,37 +166,6 @@ def merge_config_into_args(
         "skipped_missing": skipped_missing,
     }
     return args, summary
-
-
-def get_experiment_name(config):
-    exclude = {"rounds", "track", "debug"}  # 不写进文件名的字段
-
-    # 收集字段
-    detail_fields = {}
-    for k, v in vars(config).items():
-        if k in exclude:
-            continue
-        detail_fields[k] = v
-
-    # 文件名清洗：避免空格/特殊字符
-    def safe(x):
-        s = str(x)
-        return "".join(ch if (ch.isalnum() or ch in "._-") else "-" for ch in s)
-
-    # 1) 固定前缀顺序：dataset、model（你要哪个在前就调换这个列表顺序）
-    front_keys = ["dataset", "model"]
-    front_items = [(k, detail_fields.pop(k)) for k in front_keys if k in detail_fields]
-
-    # 2) 其余字段按 key 字典序排序
-    rest_items = sorted(detail_fields.items(), key=lambda kv: str(kv[0]))
-
-    # 3) 合并
-    items = front_items + rest_items
-
-    exper_detail = ", ".join(f"{k} : {v}" for k, v in items)
-    log_filename = "|".join(f"{k.replace('_','')}__{safe(v)}" for k, v in items)
-
-    return log_filename, exper_detail
 
 
 # 日志记录函数

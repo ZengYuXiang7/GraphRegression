@@ -4,29 +4,22 @@ from datetime import datetime
 import time
 import subprocess
 import numpy as np
-from datetime import datetime
 import pickle
-from Experiment import get_experiment_name
+from utils import get_experiment_name
 
-RUN_FILE = "./predictor/Experiment.py"
+RUN_FILE = "Experiment.py"
 
 # 在这里写下超参数探索空间
 hyper_dict = {
-    "dataset": ["nnlqp"],
-    "model": ["model22"],
-    "mp_type": ["gcn", "sage", "gat"],
-    # GNN 层数
-    "gcn_layers": [1, 2],
-    # 融合方式
-    "fuse_method": ["sum", "weighted", "local_only", "global_only"],
-    # pooling
-    "pool": ["sum", "mean", "cls"],
-    # 是否使用 FFN（你用 0/1）
-    "use_ffn": [1, 0],
-    # 归一化
-    "norm_type": ["layernorm", "l2", "batchnorm", "none"],
+    "dataset": ["nasbench101"],
+    "model": ["model51"],
+    "gcn_layers": [2, 3, 4, 5],
+    "pool_gnn_layers": [1, 2, 3],
+    "num_pooling": [1, 2],
 }
-
+monitor_metric = "Tau"
+reverse = True
+debug = True
 
 # 这里是总执行实验顺序！！！！！！！！
 def experiment_run():
@@ -38,13 +31,11 @@ def Our_model(hyper):
     # monitor_metric = NMAE KendallTau
     once_experiment(
         hyper,
-        monitor_metric="mape",
-        reverse=False,
-        debug=0,
+        monitor_metric=monitor_metric,
+        reverse=reverse,
+        debug=debug,
     )
     return True
-
-
 ######################################################################################################
 
 
@@ -112,41 +103,19 @@ def run_and_get_metric(cmd_str, chosen_hyper, monitor_metric, debug=False):
     print(
         f"\033[1;38;2;151;200;129m{timestamp}\033[0m \033[1;38;2;100;149;237m{cmd_str}\033[0m"
     )
-    log_filename = get_experiment_name_from_dict(chosen_hyper)
+    log_filename = get_experiment_name(chosen_hyper)
     print(log_filename)
     print(chosen_hyper)
     subprocess.run(cmd_str, shell=True)
 
     metric_file_address = (
-        f"./results/metrics/" + get_experiment_name_from_dict(chosen_hyper)[0]
+        f"./results/metrics/" + get_experiment_name(chosen_hyper)[0]
     )
     this_expr_metrics = pickle.load(open(metric_file_address + ".pkl", "rb"))
 
     # 选择最优 metric
     best_value = np.mean(this_expr_metrics[monitor_metric])
     return best_value
-
-
-def get_experiment_name_from_dict(d: dict):
-    exclude = {"rounds", "track"}
-
-    detail_fields = {k: v for k, v in d.items() if k not in exclude}
-
-    def safe(x):
-        s = str(x)
-        return "".join(ch if (ch.isalnum() or ch in "._-") else "-" for ch in s)
-
-    front_keys = ["dataset", "model"]
-    front_items = [(k, detail_fields.pop(k)) for k in front_keys if k in detail_fields]
-    rest_items = sorted(detail_fields.items(), key=lambda kv: str(kv[0]))
-    items = front_items + rest_items
-
-    exper_detail = ", ".join(f"{k} : {v}" for k, v in items)
-
-    # 强烈建议别用 '|'
-    log_filename = "|".join(f"{k.replace('_','')}__{safe(v)}" for k, v in items)
-
-    return log_filename, exper_detail
 
 
 def sequential_hyper_search(hyper_dict, monitor_metric, reverse, debug):
@@ -236,7 +205,7 @@ def sequential_hyper_search(hyper_dict, monitor_metric, reverse, debug):
             write_and_print(
                 f"==> Best {hyper_name}: {current_best_value}, local_best_metric: {local_best_metric:5.4f}\n"
             )
-            write_and_print('*' * 180 + '\n')
+            write_and_print("*" * 180 + "\n")
 
         write_and_print(f"The Best Hyperparameters: {best_hyper}\n")
 

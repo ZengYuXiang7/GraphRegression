@@ -1,4 +1,4 @@
-# NASBench101
+#!/usr/bin/env bash
 
 # Get Dataset
 #python preprocessing/gen_json_201.py

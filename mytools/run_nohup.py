@@ -6,9 +6,13 @@ import subprocess
 
 
 def run_nohup(script_path: str, workdir: str) -> None:
-    command = (
-        f"nohup bash {shlex.quote(script_path)} > train.log 2>&1 & echo $! > train.pid"
-    )
+    results_dir = os.path.join(workdir, "results")
+    os.makedirs(results_dir, exist_ok=True)
+
+    log_file = os.path.join(results_dir, "train.log")
+    pid_file = os.path.join(results_dir, "train.pid")
+
+    command = f"nohup bash {shlex.quote(script_path)} > {shlex.quote(log_file)} 2>&1 & echo $! > {shlex.quote(pid_file)}"
     subprocess.Popen(["bash", "-lc", command], cwd=workdir)
 
 
@@ -58,7 +62,7 @@ def parse_ps_table() -> list[dict]:
 
 
 def load_train_pid(workdir: str) -> int | None:
-    pid_file = os.path.join(workdir, "train.pid")
+    pid_file = os.path.join(workdir, "results", "train.pid")
     if not os.path.isfile(pid_file):
         return None
     try:
@@ -194,7 +198,7 @@ def run_flow(workdir: str, args_script: str) -> None:
         raise FileNotFoundError("未找到文件")
 
     run_nohup(script_path, workdir)
-    print("已在后台启动，输出: train.log，进程号: train.pid")
+    print("已在后台启动，输出: results/train.log，进程号: results/train.pid")
 
 
 def main() -> None:

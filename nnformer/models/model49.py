@@ -65,8 +65,6 @@ class BatchedMoEGraphFFN(nn.Module):
             self.act = nn.GELU()
         elif act_layer.lower() == "relu":
             self.act = nn.ReLU()
-        elif act_layer.lower() == "leaky_relu":
-            self.act = nn.LeakyReLU()
         else:
             raise ValueError(f"Unsupported activation: {act_layer}")
 
@@ -120,8 +118,8 @@ class GraphTransformerLayer(nn.Module):
             d_model, n_head, dropout=dropout, batch_first=True
         )
         self.dropout1 = nn.Dropout(dropout)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
+        self.norm1 = nn.RMSNorm(d_model)
+        self.norm2 = nn.RMSNorm(d_model)
         self.norm_first = norm_first
         self.ffn = BatchedMoEGraphFFN(
             d_model, mlp_ratio=mlp_ratio, act_layer=activation, drop=dropout
@@ -237,7 +235,7 @@ class Net(nn.Module):
         # self.op_embeds = nn.Embedding(self.num_node_features, self.d_model)
         # self.depth_embed = nn.Embedding(32, self.d_model)
 
-        self.prev_norm = nn.LayerNorm(self.d_model)
+        self.prev_norm = nn.RMSNorm(self.d_model)
 
         # self.encoder = nnEncoder(self.d_model, self.d_ff_ratio, self.gcn_layers)
         self.encoder = TransformerEncoder(
@@ -248,7 +246,7 @@ class Net(nn.Module):
             self.try_exp,
         )
 
-        self.post_norm = nn.LayerNorm(self.d_model)
+        self.post_norm = nn.RMSNorm(self.d_model)
 
         if config.use_head:
             self.pred_head = PredHead(self.d_model)  # Number of GCN layers
@@ -290,15 +288,28 @@ class Net(nn.Module):
 
         x = self.post_norm(x)
 
-        # Global pooling to obtain a fixed-size graph representation
-        if self.graph_readout == "sum":
-            x = torch.sum(x, dim=1)  # Global sum pooling
-        elif self.graph_readout == "mean":
-            x = torch.mean(x, dim=1)
-        elif self.graph_readout == "max":
-            x = torch.max(x, dim=1)[0]  # Get only the max values
-        elif self.graph_readout == "cls":
-            x = x[:, 0, :]
+        # 根据 config.fuse_method 选择图级聚合方式：min / max / sum / att
+        fuse_method = getattr(self.config, "fuse_method", "sum")  # 默认 sum
+        if fuse_method == "cls" and self.graph_readout == "cls":
+            # 若已用 cls token，直接取 cls 位置
+            graph_feat = x[:, 0]
+        elif fuse_method == "sum":
+            graph_feat = x.sum(dim=1)
+        elif fuse_method == "mean":
+            graph_feat = x.mean(dim=1)
+        elif fuse_method == "max":
+            graph_feat = x.max(dim=1)[0]
+        elif fuse_method == "min":
+            graph_feat = x.min(dim=1)[0]
+        elif fuse_method == "att":
+            # 可学习的全局注意力池化
+            att_logit = self.predictor(x).squeeze(-1)  # [B, L]
+            att_weight = torch.softmax(att_logit, dim=1).unsqueeze(-1)  # [B, L, 1]
+            graph_feat = (x * att_weight).sum(dim=1)  # [B, C]
+        else:
+            raise ValueError(f"Unsupported fuse_method: {fuse_method}")
+
+        x = graph_feat
 
         # Final latency prediction
         if self.config.use_head:
@@ -306,7 +317,7 @@ class Net(nn.Module):
 
         latency = self.predictor(x)  # Predict latency
 
-        return latency
+        return latency, y2
 
     def init_weights(self):
         self.apply(self._init_weights)

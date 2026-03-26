@@ -16,20 +16,17 @@ class NARLoss(nn.Module):
         self.lambda_consist = lambda_consist
         self.loss_mse = nn.MSELoss()
         self.loss_rank = nn.L1Loss()
-        # self.loss_rank = nn.SmoothL1Loss(beta=0.005)
         self.loss_consist = nn.L1Loss()
-        # self.loss_consist = nn.SmoothL1Loss(beta=0.005)
 
-    def forward(self, predict: Tensor, target: Tensor):
-        loss_mse = self.loss_mse(predict, target) * self.lambda_mse
-
+    def _rank_loss(self, predict: Tensor, target: Tensor) -> Tensor:
         index = torch.randperm(predict.shape[0], device=predict.device)
         v1 = predict - predict[index]
         v2 = target - target[index]
-        loss_rank = self.loss_rank(v1, v2) * self.lambda_rank
-        # v1 = predict.unsqueeze(1) - predict.unsqueeze(0)
-        # v2 = target.unsqueeze(1) - target.unsqueeze(0)
-        # loss_rank = self.loss_rank(v1, v2) * self.lambda_rank
+        return self.loss_rank(v1, v2)
+
+    def forward(self, predict: Tensor, target: Tensor):
+        loss_mse = self.loss_mse(predict, target) * self.lambda_mse
+        loss_rank = self._rank_loss(predict, target) * self.lambda_rank
 
         loss_consist = 0
         if self.lambda_consist > 0:

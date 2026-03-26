@@ -1,0 +1,1610 @@
+========================================================
+  NARLoss v2 精细搜索
+  2026-03-21 12:05:16
+  L1 rank loss | lambda_consistency=0 | lambda_rank 精细扫描
+  共 10 个实验
+========================================================
+
+[12:05:16] lambda_rank=0.6
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 12:05:18 INFO: Totally 1 GPUs are available.
+2026-03-21 12:05:18 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.6, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:05:18 INFO: Building dataset train from .pth file
+2026-03-21 12:05:18 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 12:05:18 INFO: Building dataset val from .pth file
+2026-03-21 12:05:18 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.6|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 12:15:04 INFO: Saved tau curve to ./results/tau/20260321121504_model56_100.pdf
+2026-03-21 12:15:04 INFO: Training Finished | Best KT 0.71392 | Best MAPE  0.02510711 | Best ErrB  0.68066406
+2026-03-21 12:15:04 INFO: Building dataset test from .pth file
+2026-03-21 12:15:47 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.32s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.6, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:16:31 INFO: [EVAL-best]  TrainKT  0.71392 | KT  0.70413, MAPE  0.03198, ErrBnd(0.01)  0.67012
+2026-03-21 12:16:34 INFO: Totally 1 GPUs are available.
+2026-03-21 12:16:34 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.6, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:16:34 INFO: Building dataset train from .pth file
+2026-03-21 12:16:34 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 12:16:34 INFO: Building dataset val from .pth file
+2026-03-21 12:16:34 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 12:26:17 INFO: Saved tau curve to ./results/tau/20260321122617_model56_100.pdf
+2026-03-21 12:26:17 INFO: Training Finished | Best KT 0.71494 | Best MAPE  0.02739975 | Best ErrB  0.53906250
+2026-03-21 12:26:17 INFO: Building dataset test from .pth file
+2026-03-21 12:26:59 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.47s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.6, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:27:44 INFO: [EVAL-best]  TrainKT  0.71494 | KT  0.70417, MAPE  0.03459, ErrBnd(0.01)  0.53297
+[2026-03-21 12:27:47] ********************Experiment Results********************
+[2026-03-21 12:27:47] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.6|percent__100|ranklosstype__l1
+[2026-03-21 12:27:47] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.6, percent : 100, rank_loss_type : l1
+[2026-03-21 12:27:47] ------------------------------------------------------------
+[2026-03-21 12:27:47] train_tau : 0.7144 ± 0.0005
+[2026-03-21 12:27:47] Tau       : 0.7041 ± 0.0000
+[2026-03-21 12:27:47] MAPE      : 0.0333 ± 0.0013
+[2026-03-21 12:27:47] ErrBnd    : 0.6015 ± 0.0686
+[2026-03-21 12:27:47] BestEpoch : 2058.0000 ± 13.0000
+[2026-03-21 12:27:47] TrainTimeSec: 583.8361 ± 1.3439
+[2026-03-21 12:27:47] ********************Experiment Success********************
+
+[12:27:48] lambda_rank=0.7
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 12:27:49 INFO: Totally 1 GPUs are available.
+2026-03-21 12:27:49 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.7, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:27:49 INFO: Building dataset train from .pth file
+2026-03-21 12:27:49 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 12:27:49 INFO: Building dataset val from .pth file
+2026-03-21 12:27:50 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.7|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 12:37:44 INFO: Saved tau curve to ./results/tau/20260321123744_model56_100.pdf
+2026-03-21 12:37:44 INFO: Training Finished | Best KT 0.71703 | Best MAPE  0.02551835 | Best ErrB  0.65917969
+2026-03-21 12:37:44 INFO: Building dataset test from .pth file
+2026-03-21 12:38:27 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.03s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.7, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:39:10 INFO: [EVAL-best]  TrainKT  0.71703 | KT  0.70793, MAPE  0.03227, ErrBnd(0.01)  0.64664
+2026-03-21 12:39:13 INFO: Totally 1 GPUs are available.
+2026-03-21 12:39:13 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.7, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:39:13 INFO: Building dataset train from .pth file
+2026-03-21 12:39:13 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 12:39:13 INFO: Building dataset val from .pth file
+2026-03-21 12:39:14 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 12:48:52 INFO: Saved tau curve to ./results/tau/20260321124852_model56_100.pdf
+2026-03-21 12:48:52 INFO: Training Finished | Best KT 0.71600 | Best MAPE  0.02791288 | Best ErrB  0.53222656
+2026-03-21 12:48:52 INFO: Building dataset test from .pth file
+2026-03-21 12:49:33 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 41.72s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.7, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:50:17 INFO: [EVAL-best]  TrainKT  0.71600 | KT  0.70536, MAPE  0.03511, ErrBnd(0.01)  0.51386
+[2026-03-21 12:50:20] ********************Experiment Results********************
+[2026-03-21 12:50:20] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.7|percent__100|ranklosstype__l1
+[2026-03-21 12:50:20] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.7, percent : 100, rank_loss_type : l1
+[2026-03-21 12:50:20] ------------------------------------------------------------
+[2026-03-21 12:50:20] train_tau : 0.7165 ± 0.0005
+[2026-03-21 12:50:20] Tau       : 0.7066 ± 0.0013
+[2026-03-21 12:50:20] MAPE      : 0.0337 ± 0.0014
+[2026-03-21 12:50:20] ErrBnd    : 0.5803 ± 0.0664
+[2026-03-21 12:50:20] BestEpoch : 1929.0000 ± 7.0000
+[2026-03-21 12:50:20] TrainTimeSec: 586.1771 ± 8.2221
+[2026-03-21 12:50:20] ********************Experiment Success********************
+
+[12:50:21] lambda_rank=0.8
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 12:50:22 INFO: Totally 1 GPUs are available.
+2026-03-21 12:50:22 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 12:50:22 INFO: Building dataset train from .pth file
+2026-03-21 12:50:22 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 12:50:22 INFO: Building dataset val from .pth file
+2026-03-21 12:50:23 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 13:00:06 INFO: Saved tau curve to ./results/tau/20260321130006_model56_100.pdf
+2026-03-21 13:00:06 INFO: Training Finished | Best KT 0.71290 | Best MAPE  0.02720473 | Best ErrB  0.56445312
+2026-03-21 13:00:06 INFO: Building dataset test from .pth file
+2026-03-21 13:00:49 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.09s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:01:35 INFO: [EVAL-best]  TrainKT  0.71290 | KT  0.70233, MAPE  0.03415, ErrBnd(0.01)  0.54859
+2026-03-21 13:01:38 INFO: Totally 1 GPUs are available.
+2026-03-21 13:01:38 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:01:38 INFO: Building dataset train from .pth file
+2026-03-21 13:01:38 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 13:01:38 INFO: Building dataset val from .pth file
+2026-03-21 13:01:38 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 13:11:20 INFO: Saved tau curve to ./results/tau/20260321131120_model56_100.pdf
+2026-03-21 13:11:20 INFO: Training Finished | Best KT 0.71541 | Best MAPE  0.02456728 | Best ErrB  0.69433594
+2026-03-21 13:11:20 INFO: Building dataset test from .pth file
+2026-03-21 13:12:02 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.42s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.8, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:12:49 INFO: [EVAL-best]  TrainKT  0.71541 | KT  0.70367, MAPE  0.03161, ErrBnd(0.01)  0.68021
+[2026-03-21 13:12:52] ********************Experiment Results********************
+[2026-03-21 13:12:52] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__100|ranklosstype__l1
+[2026-03-21 13:12:52] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 100, rank_loss_type : l1
+[2026-03-21 13:12:52] ------------------------------------------------------------
+[2026-03-21 13:12:52] train_tau : 0.7142 ± 0.0013
+[2026-03-21 13:12:52] Tau       : 0.7030 ± 0.0007
+[2026-03-21 13:12:52] MAPE      : 0.0329 ± 0.0013
+[2026-03-21 13:12:52] ErrBnd    : 0.6144 ± 0.0658
+[2026-03-21 13:12:52] BestEpoch : 1909.5000 ± 76.5000
+[2026-03-21 13:12:52] TrainTimeSec: 582.5622 ± 1.0501
+[2026-03-21 13:12:52] ********************Experiment Success********************
+
+[13:12:52] lambda_rank=0.9
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 13:12:54 INFO: Totally 1 GPUs are available.
+2026-03-21 13:12:54 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.9, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:12:54 INFO: Building dataset train from .pth file
+2026-03-21 13:12:54 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 13:12:54 INFO: Building dataset val from .pth file
+2026-03-21 13:12:54 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.9|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 13:22:36 INFO: Saved tau curve to ./results/tau/20260321132236_model56_100.pdf
+2026-03-21 13:22:36 INFO: Training Finished | Best KT 0.71824 | Best MAPE  0.02459786 | Best ErrB  0.70898438
+2026-03-21 13:22:36 INFO: Building dataset test from .pth file
+2026-03-21 13:23:18 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.51s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.9, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:24:04 INFO: [EVAL-best]  TrainKT  0.71824 | KT  0.70730, MAPE  0.03137, ErrBnd(0.01)  0.67952
+2026-03-21 13:24:07 INFO: Totally 1 GPUs are available.
+2026-03-21 13:24:07 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.9, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:24:07 INFO: Building dataset train from .pth file
+2026-03-21 13:24:07 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 13:24:07 INFO: Building dataset val from .pth file
+2026-03-21 13:24:07 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 13:33:48 INFO: Saved tau curve to ./results/tau/20260321133348_model56_100.pdf
+2026-03-21 13:33:48 INFO: Training Finished | Best KT 0.71588 | Best MAPE  0.02716913 | Best ErrB  0.55273438
+2026-03-21 13:33:48 INFO: Building dataset test from .pth file
+2026-03-21 13:34:29 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 41.14s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=0.9, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:35:16 INFO: [EVAL-best]  TrainKT  0.71588 | KT  0.70517, MAPE  0.03433, ErrBnd(0.01)  0.54991
+[2026-03-21 13:35:19] ********************Experiment Results********************
+[2026-03-21 13:35:19] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.9|percent__100|ranklosstype__l1
+[2026-03-21 13:35:19] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.9, percent : 100, rank_loss_type : l1
+[2026-03-21 13:35:19] ------------------------------------------------------------
+[2026-03-21 13:35:19] train_tau : 0.7171 ± 0.0012
+[2026-03-21 13:35:19] Tau       : 0.7062 ± 0.0011
+[2026-03-21 13:35:19] MAPE      : 0.0328 ± 0.0015
+[2026-03-21 13:35:19] ErrBnd    : 0.6147 ± 0.0648
+[2026-03-21 13:35:19] BestEpoch : 1875.5000 ± 47.5000
+[2026-03-21 13:35:19] TrainTimeSec: 581.1301 ± 0.3335
+[2026-03-21 13:35:19] ********************Experiment Success********************
+
+[13:35:19] lambda_rank=1.0
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 13:35:21 INFO: Totally 1 GPUs are available.
+2026-03-21 13:35:21 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.0, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:35:21 INFO: Building dataset train from .pth file
+2026-03-21 13:35:21 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 13:35:21 INFO: Building dataset val from .pth file
+2026-03-21 13:35:21 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.0|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 13:45:07 INFO: Saved tau curve to ./results/tau/20260321134507_model56_100.pdf
+2026-03-21 13:45:07 INFO: Training Finished | Best KT 0.71811 | Best MAPE  0.02468378 | Best ErrB  0.70410156
+2026-03-21 13:45:07 INFO: Building dataset test from .pth file
+2026-03-21 13:45:50 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.17s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.0, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:46:33 INFO: [EVAL-best]  TrainKT  0.71811 | KT  0.70808, MAPE  0.03139, ErrBnd(0.01)  0.68631
+2026-03-21 13:46:36 INFO: Totally 1 GPUs are available.
+2026-03-21 13:46:36 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.0, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:46:36 INFO: Building dataset train from .pth file
+2026-03-21 13:46:36 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 13:46:36 INFO: Building dataset val from .pth file
+2026-03-21 13:46:36 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 13:56:17 INFO: Saved tau curve to ./results/tau/20260321135617_model56_100.pdf
+2026-03-21 13:56:17 INFO: Training Finished | Best KT 0.71498 | Best MAPE  0.02477188 | Best ErrB  0.68652344
+2026-03-21 13:56:17 INFO: Building dataset test from .pth file
+2026-03-21 13:56:59 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 41.63s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.0, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:57:43 INFO: [EVAL-best]  TrainKT  0.71498 | KT  0.70443, MAPE  0.03190, ErrBnd(0.01)  0.66812
+[2026-03-21 13:57:46] ********************Experiment Results********************
+[2026-03-21 13:57:46] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.0|percent__100|ranklosstype__l1
+[2026-03-21 13:57:46] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 1.0, percent : 100, rank_loss_type : l1
+[2026-03-21 13:57:46] ------------------------------------------------------------
+[2026-03-21 13:57:46] train_tau : 0.7165 ± 0.0016
+[2026-03-21 13:57:46] Tau       : 0.7063 ± 0.0018
+[2026-03-21 13:57:46] MAPE      : 0.0316 ± 0.0003
+[2026-03-21 13:57:46] ErrBnd    : 0.6772 ± 0.0091
+[2026-03-21 13:57:46] BestEpoch : 1993.0000 ± 200.0000
+[2026-03-21 13:57:46] TrainTimeSec: 582.9648 ± 2.2269
+[2026-03-21 13:57:46] ********************Experiment Success********************
+
+[13:57:46] lambda_rank=1.1
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 13:57:48 INFO: Totally 1 GPUs are available.
+2026-03-21 13:57:48 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.1, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 13:57:48 INFO: Building dataset train from .pth file
+2026-03-21 13:57:48 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 13:57:48 INFO: Building dataset val from .pth file
+2026-03-21 13:57:48 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.1|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 14:07:27 INFO: Saved tau curve to ./results/tau/20260321140727_model56_100.pdf
+2026-03-21 14:07:27 INFO: Training Finished | Best KT 0.71447 | Best MAPE  0.02558817 | Best ErrB  0.67578125
+2026-03-21 14:07:27 INFO: Building dataset test from .pth file
+2026-03-21 14:08:11 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.15s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.1, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:08:54 INFO: [EVAL-best]  TrainKT  0.71447 | KT  0.70067, MAPE  0.03240, ErrBnd(0.01)  0.64592
+2026-03-21 14:08:57 INFO: Totally 1 GPUs are available.
+2026-03-21 14:08:57 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.1, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:08:57 INFO: Building dataset train from .pth file
+2026-03-21 14:08:57 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 14:08:57 INFO: Building dataset val from .pth file
+2026-03-21 14:08:57 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 14:18:58 INFO: Saved tau curve to ./results/tau/20260321141858_model56_100.pdf
+2026-03-21 14:18:58 INFO: Training Finished | Best KT 0.71459 | Best MAPE  0.02469033 | Best ErrB  0.70019531
+2026-03-21 14:18:58 INFO: Building dataset test from .pth file
+2026-03-21 14:19:38 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 40.40s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.1, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:20:22 INFO: [EVAL-best]  TrainKT  0.71459 | KT  0.70558, MAPE  0.03178, ErrBnd(0.01)  0.67758
+[2026-03-21 14:20:25] ********************Experiment Results********************
+[2026-03-21 14:20:25] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.1|percent__100|ranklosstype__l1
+[2026-03-21 14:20:25] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 1.1, percent : 100, rank_loss_type : l1
+[2026-03-21 14:20:25] ------------------------------------------------------------
+[2026-03-21 14:20:25] train_tau : 0.7145 ± 0.0001
+[2026-03-21 14:20:25] Tau       : 0.7031 ± 0.0025
+[2026-03-21 14:20:25] MAPE      : 0.0321 ± 0.0003
+[2026-03-21 14:20:25] ErrBnd    : 0.6617 ± 0.0158
+[2026-03-21 14:20:25] BestEpoch : 1876.0000 ± 339.0000
+[2026-03-21 14:20:25] TrainTimeSec: 589.7653 ± 10.9615
+[2026-03-21 14:20:25] ********************Experiment Success********************
+
+[14:20:26] lambda_rank=1.2
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 14:20:28 INFO: Totally 1 GPUs are available.
+2026-03-21 14:20:28 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.2, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:20:28 INFO: Building dataset train from .pth file
+2026-03-21 14:20:28 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 14:20:28 INFO: Building dataset val from .pth file
+2026-03-21 14:20:28 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.2|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 14:30:12 INFO: Saved tau curve to ./results/tau/20260321143012_model56_100.pdf
+2026-03-21 14:30:12 INFO: Training Finished | Best KT 0.71256 | Best MAPE  0.02748836 | Best ErrB  0.56347656
+2026-03-21 14:30:12 INFO: Building dataset test from .pth file
+2026-03-21 14:30:56 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.97s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.2, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:31:39 INFO: [EVAL-best]  TrainKT  0.71256 | KT  0.70084, MAPE  0.03431, ErrBnd(0.01)  0.54781
+2026-03-21 14:31:42 INFO: Totally 1 GPUs are available.
+2026-03-21 14:31:42 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.2, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:31:42 INFO: Building dataset train from .pth file
+2026-03-21 14:31:42 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 14:31:42 INFO: Building dataset val from .pth file
+2026-03-21 14:31:42 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 14:41:42 INFO: Saved tau curve to ./results/tau/20260321144142_model56_100.pdf
+2026-03-21 14:41:42 INFO: Training Finished | Best KT 0.71598 | Best MAPE  0.02442400 | Best ErrB  0.71386719
+2026-03-21 14:41:42 INFO: Building dataset test from .pth file
+2026-03-21 14:42:25 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.56s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.2, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:43:09 INFO: [EVAL-best]  TrainKT  0.71598 | KT  0.70308, MAPE  0.03146, ErrBnd(0.01)  0.68205
+[2026-03-21 14:43:12] ********************Experiment Results********************
+[2026-03-21 14:43:12] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.2|percent__100|ranklosstype__l1
+[2026-03-21 14:43:12] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 1.2, percent : 100, rank_loss_type : l1
+[2026-03-21 14:43:12] ------------------------------------------------------------
+[2026-03-21 14:43:12] train_tau : 0.7143 ± 0.0017
+[2026-03-21 14:43:12] Tau       : 0.7020 ± 0.0011
+[2026-03-21 14:43:12] MAPE      : 0.0329 ± 0.0014
+[2026-03-21 14:43:12] ErrBnd    : 0.6149 ± 0.0671
+[2026-03-21 14:43:12] BestEpoch : 1631.5000 ± 51.5000
+[2026-03-21 14:43:12] TrainTimeSec: 591.9625 ± 8.0748
+[2026-03-21 14:43:12] ********************Experiment Success********************
+
+[14:43:13] lambda_rank=1.3
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 14:43:14 INFO: Totally 1 GPUs are available.
+2026-03-21 14:43:14 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.3, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:43:14 INFO: Building dataset train from .pth file
+2026-03-21 14:43:15 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 14:43:15 INFO: Building dataset val from .pth file
+2026-03-21 14:43:15 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.3|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 14:52:57 INFO: Saved tau curve to ./results/tau/20260321145257_model56_100.pdf
+2026-03-21 14:52:57 INFO: Training Finished | Best KT 0.71537 | Best MAPE  0.02726272 | Best ErrB  0.56738281
+2026-03-21 14:52:57 INFO: Building dataset test from .pth file
+2026-03-21 14:53:40 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.75s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.3, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:54:23 INFO: [EVAL-best]  TrainKT  0.71537 | KT  0.70385, MAPE  0.03409, ErrBnd(0.01)  0.55523
+2026-03-21 14:54:26 INFO: Totally 1 GPUs are available.
+2026-03-21 14:54:26 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.3, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 14:54:26 INFO: Building dataset train from .pth file
+2026-03-21 14:54:26 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 14:54:26 INFO: Building dataset val from .pth file
+2026-03-21 14:54:26 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 15:04:12 INFO: Saved tau curve to ./results/tau/20260321150412_model56_100.pdf
+2026-03-21 15:04:12 INFO: Training Finished | Best KT 0.71642 | Best MAPE  0.02631357 | Best ErrB  0.59960938
+2026-03-21 15:04:12 INFO: Building dataset test from .pth file
+2026-03-21 15:04:53 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 41.05s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.3, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:05:39 INFO: [EVAL-best]  TrainKT  0.71642 | KT  0.70443, MAPE  0.03349, ErrBnd(0.01)  0.58868
+[2026-03-21 15:05:42] ********************Experiment Results********************
+[2026-03-21 15:05:42] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.3|percent__100|ranklosstype__l1
+[2026-03-21 15:05:42] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 1.3, percent : 100, rank_loss_type : l1
+[2026-03-21 15:05:42] ------------------------------------------------------------
+[2026-03-21 15:05:42] train_tau : 0.7159 ± 0.0005
+[2026-03-21 15:05:42] Tau       : 0.7041 ± 0.0003
+[2026-03-21 15:05:42] MAPE      : 0.0338 ± 0.0003
+[2026-03-21 15:05:42] ErrBnd    : 0.5720 ± 0.0167
+[2026-03-21 15:05:42] BestEpoch : 1936.5000 ± 76.5000
+[2026-03-21 15:05:42] TrainTimeSec: 584.0367 ± 1.6310
+[2026-03-21 15:05:42] ********************Experiment Success********************
+
+[15:05:43] lambda_rank=1.4
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 15:05:45 INFO: Totally 1 GPUs are available.
+2026-03-21 15:05:45 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.4, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:05:45 INFO: Building dataset train from .pth file
+2026-03-21 15:05:45 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 15:05:45 INFO: Building dataset val from .pth file
+2026-03-21 15:05:45 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.4|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 15:15:27 INFO: Saved tau curve to ./results/tau/20260321151527_model56_100.pdf
+2026-03-21 15:15:27 INFO: Training Finished | Best KT 0.71301 | Best MAPE  0.02501608 | Best ErrB  0.68164062
+2026-03-21 15:15:27 INFO: Building dataset test from .pth file
+2026-03-21 15:16:10 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 43.38s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.4, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:16:53 INFO: [EVAL-best]  TrainKT  0.71301 | KT  0.70228, MAPE  0.03193, ErrBnd(0.01)  0.66909
+2026-03-21 15:16:56 INFO: Totally 1 GPUs are available.
+2026-03-21 15:16:56 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.4, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:16:56 INFO: Building dataset train from .pth file
+2026-03-21 15:16:56 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 15:16:56 INFO: Building dataset val from .pth file
+2026-03-21 15:16:56 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 15:26:44 INFO: Saved tau curve to ./results/tau/20260321152643_model56_100.pdf
+2026-03-21 15:26:44 INFO: Training Finished | Best KT 0.71840 | Best MAPE  0.02664431 | Best ErrB  0.58007812
+2026-03-21 15:26:44 INFO: Building dataset test from .pth file
+2026-03-21 15:27:24 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 40.27s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.4, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:28:10 INFO: [EVAL-best]  TrainKT  0.71840 | KT  0.70559, MAPE  0.03388, ErrBnd(0.01)  0.56771
+[2026-03-21 15:28:13] ********************Experiment Results********************
+[2026-03-21 15:28:13] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.4|percent__100|ranklosstype__l1
+[2026-03-21 15:28:13] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 1.4, percent : 100, rank_loss_type : l1
+[2026-03-21 15:28:13] ------------------------------------------------------------
+[2026-03-21 15:28:13] train_tau : 0.7157 ± 0.0027
+[2026-03-21 15:28:13] Tau       : 0.7039 ± 0.0017
+[2026-03-21 15:28:13] MAPE      : 0.0329 ± 0.0010
+[2026-03-21 15:28:13] ErrBnd    : 0.6184 ± 0.0507
+[2026-03-21 15:28:13] BestEpoch : 1815.5000 ± 47.5000
+[2026-03-21 15:28:13] TrainTimeSec: 584.5117 ± 2.6655
+[2026-03-21 15:28:13] ********************Experiment Success********************
+
+[15:28:14] lambda_rank=1.5
+/home/rtx4090/anaconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+2026-03-21 15:28:16 INFO: Totally 1 GPUs are available.
+2026-03-21 15:28:16 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.5, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:28:16 INFO: Building dataset train from .pth file
+2026-03-21 15:28:16 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 15:28:16 INFO: Building dataset val from .pth file
+2026-03-21 15:28:16 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+[1;31mdataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.5|percent__100|ranklosstype__l1[0m
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 15:38:15 INFO: Saved tau curve to ./results/tau/20260321153815_model56_100.pdf
+2026-03-21 15:38:15 INFO: Training Finished | Best KT 0.71677 | Best MAPE  0.02509468 | Best ErrB  0.66796875
+2026-03-21 15:38:15 INFO: Building dataset test from .pth file
+2026-03-21 15:38:58 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.87s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.5, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:39:43 INFO: [EVAL-best]  TrainKT  0.71677 | KT  0.70391, MAPE  0.03207, ErrBnd(0.01)  0.65051
+2026-03-21 15:39:46 INFO: Totally 1 GPUs are available.
+2026-03-21 15:39:46 INFO: Configs: Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.5, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:39:46 INFO: Building dataset train from .pth file
+2026-03-21 15:39:46 INFO: Finish Loading dataset train; Number of samples: 100; Time: 0.01s
+2026-03-21 15:39:46 INFO: Building dataset val from .pth file
+2026-03-21 15:39:46 INFO: Finish Loading dataset val; Number of samples: 1024; Time: 0.07s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/train_100_onehot_op_cached_data.pth
+Loading cached data from ./data/nasbench101/nasbench101_0/val_100_onehot_op_cached_data.pth
+Net(
+  (op_embed): Linear(in_features=32, out_features=180, bias=True)
+  (in_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (out_degree_embed): Linear(in_features=32, out_features=180, bias=True)
+  (depth_embed): Linear(in_features=32, out_features=180, bias=True)
+  (embed_proj): Linear(in_features=720, out_features=180, bias=True)
+  (ml_encoder): MagLapEncoder(
+    (f_elem): Sequential(
+      (0): Linear(in_features=2, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=False)
+    )
+    (drop): Dropout(p=0.15, inplace=False)
+    (f_mix): Sequential(
+      (0): Linear(in_features=640, out_features=128, bias=True)
+      (1): ReLU()
+      (2): Linear(in_features=128, out_features=180, bias=True)
+    )
+  )
+  (encoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0-9): 10 x GraphTransformerLayer(
+        (norm1): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+        (self_attn): MultiHeadAttention(
+          (qkv): Linear(in_features=180, out_features=540, bias=False)
+          (proj): Linear(in_features=180, out_features=180, bias=False)
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ffn): BatchedMoEGraphFFN(
+          (self_expert): Linear(in_features=180, out_features=720, bias=False)
+          (in_expert): Linear(in_features=180, out_features=720, bias=False)
+          (out_expert): Linear(in_features=180, out_features=720, bias=False)
+          (gate): Sequential(
+            (0): Linear(in_features=180, out_features=90, bias=False)
+            (1): GELU(approximate='none')
+            (2): Linear(in_features=90, out_features=3, bias=False)
+          )
+          (act): ReLU()
+          (drop1): Dropout(p=0.1, inplace=False)
+          (mix_norm): LayerNorm((720,), eps=1e-05, elementwise_affine=True)
+          (fc2): Linear(in_features=720, out_features=180, bias=False)
+          (drop2): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+  )
+  (post_norm): LayerNorm((180,), eps=1e-05, elementwise_affine=True)
+  (att_pool): Linear(in_features=180, out_features=1, bias=True)
+  (predictor): Linear(in_features=180, out_features=1, bias=True)
+)
+warmup steps: 600.0
+2026-03-21 15:49:33 INFO: Saved tau curve to ./results/tau/20260321154933_model56_100.pdf
+2026-03-21 15:49:33 INFO: Training Finished | Best KT 0.72162 | Best MAPE  0.02633740 | Best ErrB  0.58691406
+2026-03-21 15:49:33 INFO: Building dataset test from .pth file
+2026-03-21 15:50:15 INFO: Finish Loading dataset test; Number of samples: 423624; Time: 42.51s
+Loading cached data from ./data/nasbench101/nasbench101_0.0/test_100_onehot_op_cached_data.pth
+Namespace(seed=2023, dataset='nasbench101', model='model56', device='cuda', do_train=True, data_path='data/nasbench101/all_nasbench101_onehot_op.pt', override_data=False, test_model_type='resnet18', finetuning=False, batch_size=128, percent=100, n_workers=1, parallel=False, embed_type='onehot_op', act_function='relu', class_token=True, depth_embed=True, encoder_type='nn', enc_dim=96, in_chans=32, d_model=180, dropout=0.1, gcn_layers=10, pool_gnn_layers=2, num_pooling=1, pool_ratio=0.25, graph_readout='att', graph_d_model=160, graph_d_ff=640, graph_n_head=6, depths=[12], drop_path_rate=0.0, tf_layers=3, use_head=0, avg_tokens=False, use_aux_loss=0, opt='adamw', opt_eps=None, opt_betas=None, momentum=0.9, weight_decay=0.01, sched='cosine', lr=0.0001, lr_cycle_mul=1.0, min_ratio=0.1, decay_rate=0.1, warmup_lr=1e-06, warmup_epochs=5, lr_cycle_limit=1, epochs=3000, resume='', save_path='results/model56/nasbench101/model56_100/', save_epoch_freq=1000, pretrained_path=None, print_freq=10000, patience=1500, lambda_mse=1.0, lambda_rank=1.5, lambda_consistency=0.0, rank_loss_type='l1', rank_alpha=10.0, test_freq=1, tqdm=0, try_exp=-1, rounds=2, debug=0)
+2026-03-21 15:51:02 INFO: [EVAL-best]  TrainKT  0.72162 | KT  0.70767, MAPE  0.03356, ErrBnd(0.01)  0.58165
+[2026-03-21 15:51:05] ********************Experiment Results********************
+[2026-03-21 15:51:05] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__1.5|percent__100|ranklosstype__l1
+[2026-03-21 15:51:05] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 1.5, percent : 100, rank_loss_type : l1
+[2026-03-21 15:51:05] ------------------------------------------------------------
+[2026-03-21 15:51:05] train_tau : 0.7192 ± 0.0024
+[2026-03-21 15:51:05] Tau       : 0.7058 ± 0.0019
+[2026-03-21 15:51:05] MAPE      : 0.0328 ± 0.0007
+[2026-03-21 15:51:05] ErrBnd    : 0.6161 ± 0.0344
+[2026-03-21 15:51:05] BestEpoch : 1934.0000 ± 12.0000
+[2026-03-21 15:51:05] TrainTimeSec: 592.5506 ± 5.9693
+[2026-03-21 15:51:05] ********************Experiment Success********************
+
+========================================================
+  全部完成  2026-03-21 15:51:06
+========================================================

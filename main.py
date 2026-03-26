@@ -66,17 +66,21 @@ def setup_seed(seed):
 
 
 def train(config, logger):
-    # Load Dataset
     train_loader, val_loader = init_dataloader(config, logger)
     n_batches = len(train_loader)
     # Init Model
     net, criterion = init_layers(config, logger)
-
     config.save_path = normalize_save_path(config.save_path)
     os.makedirs(config.save_path, exist_ok=True)
 
+    # 打印train_loader的真实数据量长度
+    logger.info(f"train_loader 数据长度: {len(train_loader.dataset)} | batch_size: {config.batch_size} | 每个epoch步数: {len(train_loader.dataset) / config.batch_size}")
+    # 打印 n_batches
+    logger.info(f"n_batches: {n_batches}")
+    
     # Optimizer
-    optimizer, scheduler = init_optim(config, net, n_batches)
+    optimizer, scheduler = init_optim(config, net, n_batches, config.warmup_step)
+    
     # Auto Resume
     start_epoch_idx = auto_load_model(config, net, optimizer, scheduler)
 
@@ -139,7 +143,7 @@ def train(config, logger):
                     logits, aux_loss = out, 0.0
 
             loss_dict = criterion(logits, gt)
-            
+
             loss = loss_dict["loss"] + 1e-3 * aux_loss
 
             loss.backward()
@@ -249,6 +253,7 @@ def train(config, logger):
     return {
         "best_epoch": best_epoch,
         "train_time_sec": train_total_time,
+        "best_tau": best_tau,
     }
 
 
@@ -286,8 +291,7 @@ def infer(dataloader, net, dataset, device=None, isTest=False):
         ps = pre.data.cpu().numpy()[:, 0].tolist()
         gs = gt.data.cpu().numpy()[:, 0].tolist()
         metric.update(ps, gs)
-        acc, err, tau = metric.get()
-    return acc, err, tau
+    return metric.get()
 
 
 def eval_with_loader(
@@ -321,8 +325,23 @@ def eval_with_loader(
 def run_exp(runid, config):
     args = parse_args()
     args = merge_config_into_args(args, config)
+    args.runid = runid
 
-    results_dir = f"results/{args.model}/nasbench101/{args.model}_{args.percent}"
+    # 根据 dataset 自动设置 data_path（如果未显式指定）
+    dataset_default_paths = {
+        "nasbench101": "data/nasbench101/all_nasbench101.pt",
+        "nasbench201": "data/nasbench201",
+        "nnlqp": "data/nnlqp/fpga",
+    }
+    default_data_path = "data/nasbench101/all_nasbench101.pt"
+    if args.data_path == default_data_path and args.dataset in dataset_default_paths:
+        args.data_path = dataset_default_paths[args.dataset]
+
+    # nnlqp 数据集不支持 onehot_op 编码，自动切换为 nerf
+    if args.dataset == "nnlqp" and args.embed_type == "onehot_op":
+        args.embed_type = "nerf"
+
+    results_dir = f"results/{args.model}/{args.dataset}/{args.model}_{args.percent}"
     args.save_path = f"{results_dir}/"
     os.makedirs(args.save_path, exist_ok=True)
 
@@ -363,18 +382,20 @@ def run_exp(runid, config):
 
     # 日志
     if tau is not None:
+        train_tau = train_stats.get("best_tau")
+        train_tau_str = f"TrainKT {train_tau:8.5f} | " if train_tau is not None else ""
         logger.info(
-            f"[EVAL-best]  KT {tau:8.5f}, MAPE {acc:8.5f}, ErrBnd(0.01) {err:8.5f}"
+            f"[EVAL-best]  {train_tau_str}KT {tau:8.5f}, MAPE {acc:8.5f}, ErrBnd(0.01) {err:8.5f}"
         )
 
     return {
+        "train_tau": train_tau,
         "Tau": tau,
         "MAPE": acc,
         "ErrBnd": err,
         "BestEpoch": train_stats.get("best_epoch"),
         "TrainTimeSec": train_stats.get("train_time_sec"),
     }
-
 
 
 if __name__ == "__main__":

@@ -1,181 +1,493 @@
+import math
+from typing import List, Optional
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from timm.models.layers import DropPath, to_2tuple
+from torch import Tensor
+
+# import algos
+from nnformer.data_process.position_encoding import Embedder
 
 
+class SquareReLU(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x: Tensor) -> Tensor:
+        return x * F.relu(x)
 
 
-# class MultiHeadAttention(nn.Module):
-#     def __init__(
-#         self,
-#         dim: int,
-#         n_head: int,
-#         dropout: float = 0.0,
-#         rel_pos_bias: bool = False,
-#     ):
-#         super().__init__()
-#         self.n_head = n_head
-#         self.head_size = dim // n_head
-#         self.scale = math.sqrt(self.head_size)
+class MultiHeadAttention(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        n_head: int,
+        dropout: float = 0.0,
+        rel_pos_bias: bool = False,
+    ):
+        super().__init__()
+        self.n_head = n_head
+        self.head_size = dim // n_head
+        self.scale = math.sqrt(self.head_size)
 
-#         self.qkv = nn.Linear(dim, 3 * dim, False)
-#         self.proj = nn.Linear(dim, dim, False)
-#         self.attn_dropout = nn.Dropout(dropout)
-#         self.resid_dropout = nn.Dropout(dropout)
+        self.qkv = nn.Linear(dim, 3 * dim, False)
+        self.proj = nn.Linear(dim, dim, False)
+        self.attn_dropout = nn.Dropout(dropout)
+        self.resid_dropout = nn.Dropout(dropout)
 
-#         self.rel_pos_bias = rel_pos_bias
-#         # if rel_pos_bias:
-#         #     self.rel_pos_forward = nn.Embedding(10, self.n_head, padding_idx=9)
-#         #     self.rel_pos_backward = nn.Embedding(10, self.n_head, padding_idx=9)
+        self.rel_pos_bias = rel_pos_bias
+        # if rel_pos_bias:
+        #     self.rel_pos_forward = nn.Embedding(10, self.n_head, padding_idx=9)
+        #     self.rel_pos_backward = nn.Embedding(10, self.n_head, padding_idx=9)
 
-#     def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
-#         B, L, C = x.shape
+    def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
+        B, L, C = x.shape
 
-#         query, key, value = self.qkv(x).chunk(3, -1)
-#         query = query.view(B, L, self.n_head, self.head_size).transpose(1, 2)
-#         key = key.view(B, L, self.n_head, self.head_size).transpose(1, 2)
-#         value = value.view(B, L, self.n_head, self.head_size).transpose(1, 2)
-#         score = torch.matmul(query, key.mT) / self.scale
+        query, key, value = self.qkv(x).chunk(3, -1)
+        query = query.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        key = key.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        value = value.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        score = torch.matmul(query, key.mT) / self.scale
+        if self.rel_pos_bias:
+            adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
+            adj = adj.masked_fill(adj != 0, 1)
+            adj = adj.float()
+            # pe = torch.stack([adj], dim=1).repeat(1, self.n_head // 1, 1, 1)
+            # pe = torch.stack([adj.mT], dim=1).repeat(1, self.n_head // 1, 1, 1)
+            # pe = torch.stack([adj, adj.mT], dim=1).repeat(1, self.n_head // 2, 1, 1)
+            # pe = torch.stack([adj, adj.mT, adj @ adj, adj.mT @ adj.mT], dim=1)
+            pe = torch.stack([adj, adj.mT, adj.mT @ adj, adj @ adj.mT], dim=1)
+            pe = pe + torch.eye(L, dtype=adj.dtype, device=adj.device)
+            pe = pe.int()
 
-#         if self.rel_pos_bias:
-#             adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
-#             adj = adj.masked_fill(adj != 0, 1)
-#             adj = adj.float()
-#             # pe = torch.stack([adj], dim=1).repeat(1, self.n_head // 1, 1, 1)
-#             # pe = torch.stack([adj.mT], dim=1).repeat(1, self.n_head // 1, 1, 1)
-#             # pe = torch.stack([adj, adj.mT], dim=1).repeat(1, self.n_head // 2, 1, 1)
-#             # pe = torch.stack([adj, adj.mT, adj @ adj, adj.mT @ adj.mT], dim=1)
-#             pe = torch.stack([adj, adj.mT, adj.mT @ adj, adj @ adj.mT], dim=1)
-#             pe = pe + torch.eye(L, dtype=adj.dtype, device=adj.device)
-#             pe = pe.int()
+            # pe = (
+            #     self.rel_pos_forward(rel_pos) + self.rel_pos_backward(rel_pos.mT)
+            # ).permute(0, 3, 1, 2)
+            # score = score * (1 + pe)
+            score = score.masked_fill(pe == 0, -torch.inf)
+        attn = F.softmax(score, dim=-1)
+        attn = self.attn_dropout(attn)  # (b, n_head, l_q, l_k)
+        x = torch.matmul(attn, value)
 
-#             # pe = (
-#             #     self.rel_pos_forward(rel_pos) + self.rel_pos_backward(rel_pos.mT)
-#             # ).permute(0, 3, 1, 2)
-#             # score = score * (1 + pe)
-#             score = score.masked_fill(pe == 0, -torch.inf)
+        x = x.transpose(1, 2).reshape(B, L, C)
+        return self.resid_dropout(self.proj(x))
 
-#         attn = F.softmax(score, dim=-1)
-#         attn = self.attn_dropout(attn)  # (b, n_head, l_q, l_k)
-#         x = torch.matmul(attn, value)
-#         x = x.transpose(1, 2).reshape(B, L, C)
-#         return self.resid_dropout(self.proj(x))
-
-#     def extra_repr(self) -> str:
-#         return f"n_head={self.n_head}"
-
-
-# class SelfAttentionBlock(nn.Module):
-#     def __init__(
-#         self,
-#         dim: int,
-#         n_head: int,
-#         dropout: float,
-#         droppath: float,
-#         rel_pos_bias: bool = False,
-#     ):
-#         super().__init__()
-#         self.norm = nn.LayerNorm(dim)
-#         # The larger the dataset, the better rel_pos_bias works
-#         # probably due to the overfitting of rel_pos_bias
-#         self.attn = MultiHeadAttention(dim, n_head, dropout, rel_pos_bias=rel_pos_bias)
-
-#     def forward(self, x: Tensor, rel_pos: Optional[Tensor] = None) -> Tensor:
-#         x_ = self.norm(x)
-#         x_ = self.attn(x_, rel_pos)
-#         return x_ + x
+    def extra_repr(self) -> str:
+        return f"n_head={self.n_head}"
 
 
+class SelfAttentionBlock(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        n_head: int,
+        dropout: float,
+        droppath: float,
+        rel_pos_bias: bool = False,
+    ):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        # The larger the dataset, the better rel_pos_bias works
+        # probably due to the overfitting of rel_pos_bias
+        self.attn = MultiHeadAttention(dim, n_head, dropout, rel_pos_bias=rel_pos_bias)
+        self.drop_path = DropPath(droppath) if droppath > 0.0 else nn.Identity()
 
-# class FeedForwardBlock(nn.Module):
-#     def __init__(
-#         self,
-#         dim: int,
-#         mlp_ratio: float,
-#         act_layer: str,
-#         dropout: float,
-#         droppath: float,
-#         gcn: bool = False,
-#     ):
-#         super().__init__()
-
-#         self.norm = nn.LayerNorm(dim)
-#         self.mlp = GINMlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
-
-#     def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
-#         x_ = self.norm(x)
-#         x_ = self.mlp(x_, adj)
-#         return x_ + x
-
-
-# class GINMlp(nn.Module):
-#     def __init__(
-#         self,
-#         dim: int,
-#         mlp_ratio: float = 4.0,
-#         out_features: Optional[int] = None,
-#         act_layer: str = "relu",
-#         drop: float = 0.0,
-#     ):
-#         super().__init__()
-#         in_features = dim
-#         out_features = out_features or in_features
-#         hidden_features = int(mlp_ratio * in_features)
-#         drop_probs = to_2tuple(drop)
-
-#         self.fc1 = nn.Linear(in_features, hidden_features, False)
-#         self.gcn = nn.Linear(in_features, hidden_features, False)
-#         if act_layer.lower() == "relu":
-#             self.act = nn.ReLU()
-#         elif act_layer.lower() == "leaky_relu":
-#             self.act = nn.LeakyReLU()
-#         else:
-#             raise ValueError(f"Unsupported activation: {act_layer}")
-#         self.drop1 = nn.Dropout(drop_probs[0])
-#         self.fc2 = nn.Linear(hidden_features, out_features, False)
-#         self.drop2 = nn.Dropout(drop_probs[1])
-
-#     def forward(self, x: Tensor, adj: Tensor) -> Tensor:
-#         out = self.fc1(x)
-#         gcn_x1, gcn_x2 = self.gcn(x).chunk(2, dim=-1)
-#         out = out + torch.cat([adj @ gcn_x1, adj.mT @ gcn_x2], dim=-1)
-#         out = self.act(out)
-#         out = self.drop1(out)
-#         out = self.fc2(out)
-#         out = self.drop2(out)
-#         return out
+    def forward(self, x: Tensor, rel_pos: Optional[Tensor] = None) -> Tensor:
+        x_ = self.norm(x)
+        x_ = self.attn(x_, rel_pos)
+        return self.drop_path(x_) + x
 
 
-# class EncoderBlock(nn.Module):
-#     def __init__(
-#         self,
-#         dim: int,
-#         n_head: int,
-#         mlp_ratio: float,
-#         act_layer: str,
-#         dropout: float,
-#         droppath: float,
-#     ):
-#         super().__init__()
-#         self.self_attn = SelfAttentionBlock(
-#             dim, n_head, dropout, droppath, rel_pos_bias=True
-#         )
-#         self.feed_forward = FeedForwardBlock(
-#             dim, mlp_ratio, act_layer, dropout, droppath, gcn=True
-#         )
+class Mlp(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        mlp_ratio: float = 4.0,
+        out_features: Optional[int] = None,
+        act_layer: str = "relu",
+        drop: float = 0.0,
+    ):
+        super().__init__()
+        in_features = dim
+        out_features = out_features or in_features
+        hidden_features = int(mlp_ratio * in_features)
+        drop_probs = to_2tuple(drop)
 
-#     def forward(self, x: Tensor, adj: Tensor) -> Tensor:
-#         x = self.self_attn(x, adj)
-#         x = self.feed_forward(x, adj)
-#         return x
+        self.fc1 = nn.Linear(in_features, hidden_features, False)
+        if act_layer.lower() == "relu":
+            self.act = nn.ReLU()
+        elif act_layer.lower() == "leaky_relu":
+            self.act = nn.LeakyReLU()
+        elif act_layer.lower() == "square_relu":
+            self.act = SquareReLU()
+        else:
+            raise ValueError(f"Unsupported activation: {act_layer}")
+        self.drop1 = nn.Dropout(drop_probs[0])
+        self.fc2 = nn.Linear(hidden_features, out_features, False)
+        self.drop2 = nn.Dropout(drop_probs[1])
+
+    def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
+        x = self.fc1(x)
+        x = self.act(x)
+        x = self.drop1(x)
+        x = self.fc2(x)
+        x = self.drop2(x)
+        return x
 
 
-# class nnEncoder(nn.Module):
-#     def __init__(self, d_model, d_ff_ratio, gcn_layers):
-#         super().__init__()
-#         # Encoder stage
-#         self.layers = nn.ModuleList()
-#         for i in range(12):
-#             self.layers.append(EncoderBlock(d_model, 4, 4, "relu", 0.1, 0))
+class GINMlp(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        mlp_ratio: float = 4.0,
+        out_features: Optional[int] = None,
+        act_layer: str = "relu",
+        drop: float = 0.0,
+    ):
+        super().__init__()
+        in_features = dim
+        out_features = out_features or in_features
+        hidden_features = int(mlp_ratio * in_features)
+        drop_probs = to_2tuple(drop)
 
-#     def forward(self, x, adj):
-#         for i, layer in enumerate(self.layers):
-#             x = layer(x, adj)
-#         return x
+        self.fc1 = nn.Linear(in_features, hidden_features, False)
+        self.gcn = nn.Linear(in_features, hidden_features, False)
+        if act_layer.lower() == "relu":
+            self.act = nn.ReLU()
+        elif act_layer.lower() == "leaky_relu":
+            self.act = nn.LeakyReLU()
+        elif act_layer.lower() == "square_relu":
+            self.act = SquareReLU()
+        else:
+            raise ValueError(f"Unsupported activation: {act_layer}")
+        self.drop1 = nn.Dropout(drop_probs[0])
+        self.fc2 = nn.Linear(hidden_features, out_features, False)
+        self.drop2 = nn.Dropout(drop_probs[1])
+
+    def forward(self, x: Tensor, adj: Tensor) -> Tensor:
+        out = self.fc1(x)
+        gcn_x1, gcn_x2 = self.gcn(x).chunk(2, dim=-1)
+
+        out = out + torch.cat([adj @ gcn_x1, adj.mT @ gcn_x2], dim=-1)
+
+        out = self.act(out)
+        out = self.drop1(out)
+        out = self.fc2(out)
+        out = self.drop2(out)
+        return out
+
+
+class FeedForwardBlock(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        mlp_ratio: float,
+        act_layer: str,
+        dropout: float,
+        droppath: float,
+        gcn: bool = False,
+    ):
+        super().__init__()
+
+        self.norm = nn.LayerNorm(dim)
+        if gcn:
+            self.mlp = GINMlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
+        else:
+            self.mlp = Mlp(dim, mlp_ratio, act_layer=act_layer, drop=dropout)
+        self.drop_path = DropPath(droppath) if droppath > 0.0 else nn.Identity()
+
+    def forward(self, x: Tensor, adj: Optional[Tensor] = None) -> Tensor:
+        x_ = self.norm(x)
+        x_ = self.mlp(x_, adj)
+        return self.drop_path(x_) + x
+
+
+class EncoderBlock(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        n_head: int,
+        mlp_ratio: float,
+        act_layer: str,
+        dropout: float,
+        droppath: float,
+    ):
+        super().__init__()
+        self.self_attn = SelfAttentionBlock(
+            dim, n_head, dropout, droppath, rel_pos_bias=True
+        )
+        self.feed_forward = FeedForwardBlock(
+            dim, mlp_ratio, act_layer, dropout, droppath, gcn=True
+        )
+
+    def forward(self, x: Tensor, rel_pos: Tensor, adj: Tensor) -> Tensor:
+        x = self.self_attn(x, rel_pos)
+        x = self.feed_forward(x, adj)
+        return x
+
+
+# Main class
+class Encoder(nn.Module):
+    def __init__(
+        self,
+        depths: List[int] = [12],
+        dim: int = 192,
+        n_head: int = 4,
+        mlp_ratio: float = 4.0,
+        act_layer: str = "relu",
+        dropout: float = 0.0,
+        droppath: float = 0.0,
+    ):
+        super().__init__()
+        self.num_layers = sum(depths)
+
+        # stochastic depth
+        dpr = [x.item() for x in torch.linspace(0, droppath, self.num_layers)]
+
+        # Encoder stage
+        self.layers = nn.ModuleList()
+        for i in range(depths[0]):
+            droppath = dpr[i]
+            self.layers.append(
+                EncoderBlock(dim, n_head, mlp_ratio, act_layer, dropout, droppath)
+            )
+
+        self.norm = nn.LayerNorm(dim)
+
+    def forward(self, x: Tensor, rel_pos: Tensor, adj: Tensor) -> Tensor:
+        for i, layer in enumerate(self.layers):
+            x = layer(x, rel_pos, adj)
+        output = self.norm(x)
+        return output
+
+
+class RegHead(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        avg_tokens: bool = False,
+        class_token: bool = True,
+        depth_embed: bool = True,
+        dropout: float = 0.1,
+    ):
+        super().__init__()
+        assert (
+            avg_tokens or class_token
+        ), "`class_token` must be true if `avg_tokens` is false"
+        self.avg_tokens = avg_tokens
+        self.class_token = class_token
+        self.depth_embed = depth_embed
+        self.layer = nn.Linear(in_channels, out_channels)
+
+    def forward(self, x: Tensor) -> Tensor:  # x(b/n_gpu, l, d)
+        if self.avg_tokens:
+            if self.class_token:
+                x = x[:, 1:]
+            if self.depth_embed:
+                x = x[:, :-1]
+            x_ = x.mean(dim=1)
+        else:
+            x_ = x[:, 0, :]  # (b, d)
+
+        res = self.layer(x_)
+        return res
+
+
+def tokenizer(
+    ops: List[int],
+    adj,
+    depth: int,
+    op_depth: List[int],
+    dim_x: int = 192,
+    embed_type: str = "nape",
+):
+    adj = torch.tensor(adj)
+
+    if embed_type == "onehot_op":
+        code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x)
+        code_depth = F.one_hot(torch.tensor([depth]), num_classes=dim_x)
+        code_op_depth = F.one_hot(torch.tensor(op_depth), num_classes=dim_x)
+        return (
+            code_ops.to(torch.int8),
+            adj.to(torch.int8),
+            code_depth.to(torch.int8),
+            code_op_depth.to(torch.int8),
+        )
+    elif embed_type == "onehot_oppos":
+        code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x // 2)
+        code_pos = F.one_hot(torch.arange(len(ops)), num_classes=dim_x // 2)
+        code_ops = torch.cat([code_ops, code_pos], dim=-1)
+        code_depth = F.one_hot(torch.tensor([depth]), num_classes=dim_x)
+        code_op_depth = F.one_hot(torch.tensor(op_depth), num_classes=dim_x)
+        return (
+            code_ops.to(torch.int8),
+            adj.to(torch.int8),
+            code_depth.to(torch.int8),
+            code_op_depth.to(torch.int8),
+        )
+    elif embed_type == "onehot_oplaplacian":
+        code_ops = F.one_hot(torch.tensor(ops), num_classes=dim_x)
+        code_ops[:, dim_x // 2 : dim_x // 2 + adj.shape[-1]] = adj.sum(-1) - adj
+        code_depth = F.one_hot(torch.tensor([depth]), num_classes=dim_x)
+        code_op_depth = F.one_hot(torch.tensor(op_depth), num_classes=dim_x)
+        return (
+            code_ops.to(torch.int8),
+            adj.to(torch.int8),
+            code_depth.to(torch.int8),
+            code_op_depth.to(torch.int8),
+        )
+    else:
+        # encode operation
+        # fn = Embedder(dim_x // 2, embed_type=embed_type)
+        # code_ops_list = [fn(torch.Tensor([30]))]
+        # code_ops_list += [fn(torch.Tensor([op])) for op in ops]
+        # code_ops = torch.stack(code_ops_list, dim=0)  # (len, dim_x)
+
+        # depth = torch.Tensor([depth])
+        # code_depth = fn(depth).reshape(1, -1)
+
+        # # encode op_depth
+        # code_op_depth_list = [fn(torch.Tensor([d])) for d in op_depth]
+        # code_op_depth = torch.stack(code_op_depth_list, dim=0)  # (len, dim_x)
+
+        # # shortest_path, path = algos.floyd_warshall(adj.numpy())
+        # # shortest_path = torch.from_numpy(shortest_path).long()
+        # # shortest_path = torch.clamp(shortest_path, min=0, max=8)
+
+        # rel_pos = torch.full((len(ops) + 2, len(ops) + 2), fill_value=9).int()
+        # rel_pos[1:-1, 1:-1] = adj
+
+        # 2026年03月03日17:21:13，先不做多两个节点
+        fn = Embedder(dim_x // 2, embed_type=embed_type)
+
+        # 1) 只对自己的 ops 做 embedding，不加 30
+        code_ops_list = [fn(torch.tensor([op], dtype=torch.float32)) for op in ops]
+        code_ops = torch.stack(code_ops_list, dim=0)  # (len(ops), dim)
+
+        # 2) depth 还是全局标量 embedding
+        code_depth = fn(torch.tensor([depth], dtype=torch.float32)).reshape(1, -1)
+
+        # 3) 每个 op 的深度 embedding
+        code_op_depth_list = [
+            fn(torch.tensor([d], dtype=torch.float32)) for d in op_depth
+        ]
+        code_op_depth = torch.stack(code_op_depth_list, dim=0)  # (len(ops), dim)
+
+        # 4) rel_pos 只用自己的邻接/关系矩阵，不扩维
+        rel_pos = adj.int()  # 形状应为 (len(ops), len(ops))
+
+        return code_ops, rel_pos, code_depth, code_op_depth
+
+
+from mytools.registry import *
+
+
+@register_model("nnformer")
+class NNFormer(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        depths: List[int] = [12]
+        in_chans: int = 32
+        dim: int = 160
+        n_head: int = 4
+        mlp_ratio: float = 4.0
+        act_layer: str = "relu"
+        dropout: float = 0.1
+        droppath: float = 0.0
+        avg_tokens: bool = False
+        class_token: bool = True
+        depth_embed: bool = True
+        # dataset: str = "nasbench101"
+
+        # in_chans = 5
+        self.num_node_features = in_chans
+        self.op_embed = nn.Linear(in_chans, dim, False)
+        self.depth_embed = nn.Linear(in_chans, dim, False) if depth_embed else None
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, dim)) if class_token else None
+        self.norm = nn.LayerNorm(dim)
+        self.encoder = Encoder(
+            depths=depths,
+            dim=dim,
+            n_head=n_head,
+            mlp_ratio=mlp_ratio,
+            act_layer=act_layer,
+            dropout=dropout,
+            droppath=droppath,
+        )
+        self.head = RegHead(dim, 1, avg_tokens, class_token, depth_embed, dropout)
+        self.init_weights()
+
+    def init_weights(self):
+        self.apply(self._init_weights)
+        if self.cls_token is not None:
+            nn.init.trunc_normal_(self.cls_token, std=0.02)
+
+    def _init_weights(self, m):
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            nn.init.trunc_normal_(m.weight, std=0.02)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.Embedding):
+            nn.init.constant_(m.weight, 0)
+            # nn.init.trunc_normal_(m.weight, std=0.02)
+
+    @torch.jit.ignore()
+    def no_weight_decay(self):
+        no_decay = {}
+        return no_decay
+
+    def forward(self, sample, static_feats) -> Tensor:
+        # Original Encodings
+        seqcode = sample["code"]
+
+        # seqcode = sample['ops'].long()
+        # seqcode = F.one_hot(seqcode, num_classes=self.num_node_features).float()
+
+        depth = sample["code_depth"]
+        rel_pos = sample["code_rel_pos"]
+        adj = sample["code_adj"]
+
+        seqcode = self.op_embed(seqcode)
+
+        if self.cls_token is not None:
+            seqcode = torch.cat(
+                [self.cls_token.expand(seqcode.shape[0], -1, -1), seqcode], dim=1
+            )
+            new_adj = torch.zeros(
+                adj.shape[0], adj.shape[1] + 1, adj.shape[2] + 1, device=adj.device
+            )
+            new_adj[:, 1:, 1:] = adj
+            adj = new_adj
+            new_rel_pos = torch.ones(
+                rel_pos.shape[0],
+                rel_pos.shape[1] + 1,
+                rel_pos.shape[2] + 1,
+                device=rel_pos.device,
+            )
+            new_rel_pos[:, 1:, 1:] = rel_pos
+            rel_pos = new_rel_pos
+
+        if self.depth_embed is not None:
+            seqcode = torch.cat([seqcode, self.depth_embed(depth)], dim=1)
+            new_adj = torch.zeros(
+                adj.shape[0], adj.shape[1] + 1, adj.shape[2] + 1, device=adj.device
+            )
+            new_adj[:, :-1, :-1] = adj
+            adj = new_adj
+            new_rel_pos = torch.ones(
+                rel_pos.shape[0],
+                rel_pos.shape[1] + 1,
+                rel_pos.shape[2] + 1,
+                device=rel_pos.device,
+            )
+            new_rel_pos[:, :-1, :-1] = rel_pos
+            rel_pos = new_rel_pos
+
+        seqcode = self.norm(seqcode)
+        aev = self.encoder(seqcode, rel_pos, adj.to(torch.float))
+        # multi_stage:aev(b, 1, d)
+        predict = self.head(aev)
+        return predict

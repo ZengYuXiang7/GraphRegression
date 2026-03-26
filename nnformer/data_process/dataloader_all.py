@@ -66,8 +66,11 @@ def init_dataset_NNLQP(
 
 
 def init_dataloader(args, logger):
+    # Load Dataset
+    args.data_path = f"data/{args.dataset}/all_{args.dataset}_{args.embed_type}.pt"
     if "nasbench" in args.dataset:
         if args.do_train:
+            runid = getattr(args, "runid", 0)
             trainset = NasbenchDataset(
                 logger,
                 args.dataset,
@@ -76,9 +79,13 @@ def init_dataloader(args, logger):
                 args.percent,
                 args.lambda_consistency,
                 embed_type=args.embed_type,
+                sample_method=args.sample_method,
+                n_clusters=getattr(args, "n_clusters", 5),
+                runid=runid,
             )
             valset = NasbenchDataset(
                 logger, args.dataset, "val", args.data_path, args.percent, embed_type=args.embed_type,
+                runid=runid,
             )
             train_sampler = FixedLengthBatchSampler(
                 trainset, args.dataset, args.batch_size, include_partial=True
@@ -89,17 +96,15 @@ def init_dataloader(args, logger):
             train_loader = DataLoader(
                 trainset,
                 shuffle=(train_sampler is None),
-                num_workers=args.n_workers,
+                num_workers=0,
                 pin_memory=True,
-                persistent_workers=True,
                 batch_sampler=train_sampler,
             )
             val_loader = DataLoader(
                 valset,
                 shuffle=(val_sampler is None),
-                num_workers=args.n_workers,
+                num_workers=0,
                 pin_memory=True,
-                persistent_workers=True,
                 batch_sampler=val_sampler,
             )
             return train_loader, val_loader
@@ -112,6 +117,7 @@ def init_dataloader(args, logger):
                 args.percent,
                 args.lambda_consistency,
                 embed_type=args.embed_type,
+                runid=getattr(args, "runid", 0),
             )
             sampler = FixedLengthBatchSampler(
                 dataset, args.dataset, args.batch_size, include_partial=True
@@ -119,9 +125,8 @@ def init_dataloader(args, logger):
             dataLoader = DataLoader(
                 dataset,
                 shuffle=(sampler is None),
-                num_workers=args.n_workers,
+                num_workers=0,
                 pin_memory=True,
-                persistent_workers=True,
                 batch_sampler=sampler,
             )
             return dataLoader
@@ -147,17 +152,15 @@ def init_dataloader(args, logger):
         train_loader = DataLoader(
             trainset,
             shuffle=(train_sampler is None),
-            num_workers=args.n_workers,
+            num_workers=0,
             pin_memory=True,
-            persistent_workers=True,
             batch_sampler=train_sampler,
         )
         test_loader = DataLoader(
             testset,
             shuffle=(test_sampler is None),
-            num_workers=args.n_workers,
+            num_workers=0,
             pin_memory=True,
-            persistent_workers=True,
             batch_sampler=test_sampler,
         )
         if args.do_train:

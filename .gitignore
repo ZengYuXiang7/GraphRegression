@@ -1,4 +1,5 @@
 .idea/
+.archived/
 .vscode/
 __pycache__/
 *.py[cod]
