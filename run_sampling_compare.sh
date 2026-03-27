@@ -10,7 +10,7 @@ ROUNDS=2
 METHODS="random" # random cluster
 # 100->2  172->4  424->6  4236->35
 PERCENTS="100 172 424 4236"
-warmup_step=0.05
+warmup_step=0.10
 echo "========================================================"
 echo "  采样方式对比实验：random vs cluster"
 echo "  model=$MODEL  rounds=$ROUNDS"

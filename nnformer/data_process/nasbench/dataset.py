@@ -126,7 +126,11 @@ class NasbenchDataset(Dataset):
                 if self.sample_method in ("cluster", "op_filtered", "balanced_cluster", "max_entropy", "joint_max_entropy"):
                     keys = self._load_sample_keys()
                 else:
-                    keys = sorted(all_keys[:data_num])
+                    # 过滤掉节点数2-5的小图，只保留节点数>=6的样本
+                    filtered_keys = [k for k in all_keys if len(columns["ops"][k]) >= 6]
+                    print(f"[random过滤] 总样本: {total_num}, 节点数>=6: {len(filtered_keys)}, "
+                          f"过滤掉: {total_num - len(filtered_keys)}")
+                    keys = sorted(filtered_keys[:data_num])
             elif self.part == "val":
                 val_end = min(total_num, data_num + 1024)
                 keys = sorted(all_keys[data_num:val_end])
@@ -164,7 +168,11 @@ class NasbenchDataset(Dataset):
                 if self.sample_method in ("cluster", "op_filtered", "balanced_cluster", "max_entropy", "joint_max_entropy"):
                     keys = self._load_sample_keys()
                 else:
-                    keys = sorted(all_keys[:data_num])
+                    # 过滤掉节点数2-5的小图，只保留节点数>=6的样本
+                    filtered_keys = [k for k in all_keys if len(data_all[k]["ops"]) >= 6]
+                    print(f"[random过滤] 总样本: {total_num}, 节点数>=6: {len(filtered_keys)}, "
+                          f"过滤掉: {total_num - len(filtered_keys)}")
+                    keys = sorted(filtered_keys[:data_num])
             elif self.part == "val":
                 val_end = min(total_num, data_num + 1024)
                 keys = sorted(all_keys[data_num:val_end])

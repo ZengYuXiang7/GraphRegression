@@ -7816,3 +7816,87 @@
 [2026-03-26 15:36:26] ********************Experiment Success********************
 
 
+
+
+[2026-03-26 16:28:08] ********************Experiment Results********************
+[2026-03-26 16:28:08] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__100|samplemethod__random|tqdm__0|warmupstep__0.15
+[2026-03-26 16:28:08] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 100, sample_method : random, tqdm : 0, warmup_step : 0.15
+[2026-03-26 16:28:08] ------------------------------------------------------------
+[2026-03-26 16:28:08] train_tau : 0.6974 ± 0.0202
+[2026-03-26 16:28:08] Tau       : 0.6938 ± 0.0122
+[2026-03-26 16:28:08] MAPE      : 0.0336 ± 0.0002
+[2026-03-26 16:28:08] ErrBnd    : 0.5365 ± 0.0239
+[2026-03-26 16:28:08] BestEpoch : 980.0000 ± 206.0000
+[2026-03-26 16:28:08] TrainTimeSec: 553.6992 ± 25.4518
+[2026-03-26 16:28:08] ********************Experiment Success********************
+
+
+
+
+
+
+[2026-03-26 17:10:27] ********************Experiment Results********************
+[2026-03-26 17:10:27] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__100|samplemethod__random|tqdm__0|warmupstep__0.2
+[2026-03-26 17:10:27] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 100, sample_method : random, tqdm : 0, warmup_step : 0.2
+[2026-03-26 17:10:27] ------------------------------------------------------------
+[2026-03-26 17:10:27] train_tau : 0.6982 ± 0.0178
+[2026-03-26 17:10:27] Tau       : 0.6954 ± 0.0110
+[2026-03-26 17:10:27] MAPE      : 0.0336 ± 0.0002
+[2026-03-26 17:10:27] ErrBnd    : 0.5343 ± 0.0324
+[2026-03-26 17:10:27] BestEpoch : 1157.5000 ± 25.5000
+[2026-03-26 17:10:27] TrainTimeSec: 561.7863 ± 5.5643
+[2026-03-26 17:10:27] ********************Experiment Success********************
+
+
+
+
+[2026-03-26 17:47:17] ********************Experiment Results********************
+[2026-03-26 17:47:17] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__100|samplemethod__random|tqdm__0|warmupstep__0.1
+[2026-03-26 17:47:17] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 100, sample_method : random, tqdm : 0, warmup_step : 0.1
+[2026-03-26 17:47:17] ------------------------------------------------------------
+[2026-03-26 17:47:17] train_tau : 0.6987 ± 0.0183
+[2026-03-26 17:47:17] Tau       : 0.6954 ± 0.0105
+[2026-03-26 17:47:17] MAPE      : 0.0329 ± 0.0001
+[2026-03-26 17:47:17] ErrBnd    : 0.5867 ± 0.0290
+[2026-03-26 17:47:17] BestEpoch : 1297.0000 ± 112.0000
+[2026-03-26 17:47:17] TrainTimeSec: 585.9099 ± 31.7599
+[2026-03-26 17:47:17] ********************Experiment Success********************
+
+
+[2026-03-26 18:13:43] ********************Experiment Results********************
+[2026-03-26 18:13:43] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__172|samplemethod__random|tqdm__0|warmupstep__0.1
+[2026-03-26 18:13:43] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 172, sample_method : random, tqdm : 0, warmup_step : 0.1
+[2026-03-26 18:13:43] ------------------------------------------------------------
+[2026-03-26 18:13:43] train_tau : 0.7269 ± 0.0231
+[2026-03-26 18:13:43] Tau       : 0.7276 ± 0.0141
+[2026-03-26 18:13:43] MAPE      : 0.0312 ± 0.0006
+[2026-03-26 18:13:43] ErrBnd    : 0.6895 ± 0.0073
+[2026-03-26 18:13:43] BestEpoch : 2124.5000 ± 241.5000
+[2026-03-26 18:13:43] TrainTimeSec: 674.9185 ± 2.5722
+[2026-03-26 18:13:43] ********************Experiment Success********************
+
+
+[2026-03-26 18:43:15] ********************Experiment Results********************
+[2026-03-26 18:43:15] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__424|samplemethod__random|tqdm__0|warmupstep__0.1
+[2026-03-26 18:43:15] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 424, sample_method : random, tqdm : 0, warmup_step : 0.1
+[2026-03-26 18:43:15] ------------------------------------------------------------
+[2026-03-26 18:43:15] train_tau : 0.7999 ± 0.0033
+[2026-03-26 18:43:15] Tau       : 0.7980 ± 0.0038
+[2026-03-26 18:43:15] MAPE      : 0.0283 ± 0.0004
+[2026-03-26 18:43:15] ErrBnd    : 0.7827 ± 0.0242
+[2026-03-26 18:43:15] BestEpoch : 2441.0000 ± 323.0000
+[2026-03-26 18:43:15] TrainTimeSec: 757.9357 ± 7.6104
+[2026-03-26 18:43:15] ********************Experiment Success********************
+
+
+[2026-03-26 20:26:03] ********************Experiment Results********************
+[2026-03-26 20:26:03] log Filename: dataset__nasbench101|model__model56|dmodel__180|embedtype__onehot_op|gcnlayers__10|graphnhead__6|graphreadout__att|lambdaconsistency__0.0|lambdamse__1.0|lambdarank__0.8|percent__4236|samplemethod__random|tqdm__0|warmupstep__0.1
+[2026-03-26 20:26:03] Experiment Detail: dataset : nasbench101, model : model56, d_model : 180, embed_type : onehot_op, gcn_layers : 10, graph_n_head : 6, graph_readout : att, lambda_consistency : 0.0, lambda_mse : 1.0, lambda_rank : 0.8, percent : 4236, sample_method : random, tqdm : 0, warmup_step : 0.1
+[2026-03-26 20:26:03] ------------------------------------------------------------
+[2026-03-26 20:26:03] train_tau : 0.8809 ± 0.0026
+[2026-03-26 20:26:03] Tau       : 0.8740 ± 0.0001
+[2026-03-26 20:26:03] MAPE      : 0.0202 ± 0.0017
+[2026-03-26 20:26:03] ErrBnd    : 0.9004 ± 0.0109
+[2026-03-26 20:26:03] BestEpoch : 2511.0000 ± 214.0000
+[2026-03-26 20:26:03] TrainTimeSec: 2949.1790 ± 87.2584
+[2026-03-26 20:26:03] ********************Experiment Success********************
