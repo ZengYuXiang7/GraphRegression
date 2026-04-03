@@ -37,11 +37,9 @@ def build_structural_bias(
     """
     adj_local = mask_cls_in_adj(adj)
 
-    # 基本邻接矩阵
     adj_fwd = adj_local.float()
     adj_bwd = adj_local.mT.float()
 
-    # 距离矩阵（如果有）
     if distance is not None:
         dist_fwd = (distance > 0).float()
         dist_bwd = (distance.mT > 0).float()
@@ -49,7 +47,6 @@ def build_structural_bias(
         dist_fwd = (adj_local @ adj_local > 0).float()
         dist_bwd = (adj_local.mT @ adj_local.mT > 0).float()
 
-    # 共同后继 / 前驱
     common_succ = (torch.bmm(adj_local, adj_local.mT) > 0).float()
     common_pred = (torch.bmm(adj_local.mT, adj_local) > 0).float()
 
