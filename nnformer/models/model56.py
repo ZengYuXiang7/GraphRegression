@@ -7,14 +7,51 @@ from typing import Optional
 from torch import Tensor
 from timm.models.layers import to_2tuple
 
+from nnformer.models.model56_utils import (
+    preprocess_adj,
+    build_structural_bias,
+    apply_structural_bias,
+)
+
 
 # ============================================================
-# 可学习的有向图位置编码器
+# 公共工具
+# ============================================================
+
+
+def make_activation(act_layer: str) -> nn.Module:
+    """根据字符串名称创建激活函数模块。"""
+    act = act_layer.lower()
+    if act == "relu":
+        return nn.ReLU()
+    elif act == "leaky_relu":
+        return nn.LeakyReLU()
+    else:
+        raise ValueError(f"Unsupported activation: {act_layer}")
+
+
+# ============================================================
+# 位置编码
 # ============================================================
 
 
 class MagLapEncoder(nn.Module):
-    def __init__(self, k=25, hidden_dim=64, output_dim=128, dropout=0.10):
+    """
+    Magnetic Laplacian Position Encoder.
+
+    对每个节点的 k 条特征边 (B, N, K, 2) 进行：
+      1. 逐边线性投影 + LayerNorm
+      2. Self-Attention 聚合
+      3. 拼接后投影到 d_model 维
+    """
+
+    def __init__(
+        self,
+        k: int = 25,
+        hidden_dim: int = 64,
+        output_dim: int = 128,
+        dropout: float = 0.1,
+    ):
         super().__init__()
         self.k = k
         self.hidden_dim = hidden_dim
@@ -39,36 +76,35 @@ class MagLapEncoder(nn.Module):
             nn.Linear(hidden_dim, output_dim),
         )
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        x: (B, N, K, 2)
+        returns: (B, N, output_dim)
+        """
         B, N, K, _ = x.shape
-        h = self.f_elem(x)
-        h = self.norm(h)
-        h = h.reshape(B * N, K, self.hidden_dim)
+        h = self.norm(self.f_elem(x))  # (B, N, K, hidden_dim)
+        h = h.reshape(B * N, K, self.hidden_dim)  # (BN, K, hidden_dim)
         h, _ = self.attn(h, h, h, need_weights=False)
         h = self.drop(h)
-        h = h.reshape(B, N, K * self.hidden_dim)
+        h = h.reshape(B, N, K * self.hidden_dim)  # (B, N, K*hidden_dim)
         return self.f_mix(h)
 
 
 # ============================================================
-# 模型组件
+# 注意力层
 # ============================================================
 
 
 class MultiHeadAttention(nn.Module):
     """
-    仿 nnencoder 的手动实现多头注意力。
-    结构感知偏置直接在 attention score 上做 masked_fill，
-    而非通过 attn_mask 参数传入 nn.MultiheadAttention。
+    手动实现的多头注意力，带结构感知偏置（6 个 head 对应 6 种图结构信号）。
 
-    pe 构造（仿 nnencoder）：
-      n_head == 4: [adj, adj^T, adj^T @ adj, adj @ adj^T]
-      n_head == 6: [adj, adj^T, dist_fwd, dist_bwd, adj^T @ adj, adj @ adj^T]
+    结构偏置通过 masked_fill 直接作用于 attention score，而非通过 attn_mask 参数。
     """
 
     def __init__(self, dim: int, n_head: int, dropout: float = 0.0):
         super().__init__()
-        assert dim % n_head == 0, f"dim={dim} 必须整除 n_head={n_head}"
+        assert dim % n_head == 0, f"dim={dim} must be divisible by n_head={n_head}"
         self.n_head = n_head
         self.head_size = dim // n_head
         self.scale = math.sqrt(self.head_size)
@@ -78,58 +114,55 @@ class MultiHeadAttention(nn.Module):
         self.attn_dropout = nn.Dropout(dropout)
         self.resid_dropout = nn.Dropout(dropout)
 
+    def _compute_qkv(self, x: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        """QKV 投影并 reshape 为 (B, H, L, d)。"""
+        B, L, C = x.shape
+        q, k, v = self.qkv(x).chunk(3, dim=-1)
+        q = q.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        k = k.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        v = v.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        return q, k, v
+
+    def _build_bias(self, adj: Tensor, distance: Optional[Tensor]) -> Tensor:
+        """构建 6 通道结构偏置矩阵。"""
+        return build_structural_bias(adj, distance, self.n_head)
+
     def forward(
         self, x: Tensor, adj: Tensor, distance: Optional[Tensor] = None
     ) -> Tensor:
+        """
+        x:       (B, L, C)
+        adj:     (B, L, L)
+        distance: (B, L, L) 或 None
+        """
         B, L, C = x.shape
 
-        query, key, value = self.qkv(x).chunk(3, dim=-1)
-        query = query.view(B, L, self.n_head, self.head_size).transpose(
-            1, 2
-        )  # (B, H, L, d)
-        key = key.view(B, L, self.n_head, self.head_size).transpose(1, 2)
-        value = value.view(B, L, self.n_head, self.head_size).transpose(1, 2)
+        q, k, v = self._compute_qkv(x)
+        score = torch.matmul(q, k.mT) / self.scale  # (B, H, L, L)
 
-        score = torch.matmul(query, key.mT) / self.scale  # (B, H, L, L)
-
-        # --- 结构感知掩码（直接在 score 上操作，仿 nnencoder）---
-        # 6个头对应 6 个结构矩阵：[adj, adj^T, dist_fwd, dist_bwd, common_succ, common_pred]
-        adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
-        adj = adj.masked_fill(adj != 0, 1).float()
-
-        adj_local = adj.clone()
-        adj_local[:, 0, :] = 0
-        adj_local[:, :, 0] = 0
-        dist_fwd = (
-            (distance > 0).float()
-            if distance is not None
-            else (adj_local @ adj_local > 0).float()
-        )
-        dist_bwd = (
-            (distance.mT > 0).float()
-            if distance is not None
-            else (adj_local.mT @ adj_local.mT > 0).float()
-        )
-        common_succ = (torch.bmm(adj_local, adj_local.mT) > 0).float()
-        common_pred = (torch.bmm(adj_local.mT, adj_local) > 0).float()
-        pe = torch.stack(
-            [adj, adj.mT, dist_fwd, dist_bwd, common_succ, common_pred], dim=1
-        )  # (B, 6, L, L)
-
-        pe = (
-            pe + torch.eye(L, dtype=adj.dtype, device=adj.device)
-        ).int()  # 自环默认可见
-        score = score.masked_fill(pe == 0, -torch.inf)
+        # --- 结构感知掩码 ---
+        adj = preprocess_adj(adj, L)
+        pe = self._build_bias(adj, distance)
+        score = apply_structural_bias(score, pe, L, adj.device)
 
         attn = F.softmax(score, dim=-1)
         attn = self.attn_dropout(attn)
-        x = torch.matmul(attn, value)  # (B, H, L, d)
+        out = torch.matmul(attn, v)  # (B, H, L, d)
 
-        x = x.transpose(1, 2).reshape(B, L, C)
-        return self.resid_dropout(self.proj(x))
+        out = out.transpose(1, 2).reshape(B, L, C)
+        return self.resid_dropout(self.proj(out))
+
+
+# ============================================================
+# FFN 层
+# ============================================================
 
 
 class GINMlp(nn.Module):
+    """
+    GIN-style MLP：结合节点自身特征与邻居聚合特征。
+    """
+
     def __init__(
         self,
         dim: int,
@@ -142,46 +175,32 @@ class GINMlp(nn.Module):
         in_features = dim
         out_features = out_features or in_features
         hidden_features = int(mlp_ratio * in_features)
-        drop_probs = to_2tuple(drop)
+        p1, p2 = to_2tuple(drop)
 
-        self.fc1 = nn.Linear(in_features, hidden_features, False)
-        self.gcn = nn.Linear(in_features, hidden_features, False)
-        if act_layer.lower() == "relu":
-            self.act = nn.ReLU()
-        elif act_layer.lower() == "leaky_relu":
-            self.act = nn.LeakyReLU()
-        else:
-            raise ValueError(f"Unsupported activation: {act_layer}")
-        self.drop1 = nn.Dropout(drop_probs[0])
-        self.fc2 = nn.Linear(hidden_features, out_features, False)
-        self.drop2 = nn.Dropout(drop_probs[1])
+        self.fc1 = nn.Linear(in_features, hidden_features, bias=False)
+        self.gcn = nn.Linear(in_features, hidden_features, bias=False)
+        self.act = make_activation(act_layer)
+        self.drop1 = nn.Dropout(p1)
+        self.fc2 = nn.Linear(hidden_features, out_features, bias=False)
+        self.drop2 = nn.Dropout(p2)
 
     def forward(self, x: Tensor, adj: Tensor) -> Tensor:
-        out = self.fc1(x)
-        gcn_x1, gcn_x2 = self.gcn(x).chunk(2, dim=-1)
-
-        out = out + torch.cat([adj @ gcn_x1, adj.mT @ gcn_x2], dim=-1)
-
-        out = self.act(out)
-        out = self.drop1(out)
-        out = self.fc2(out)
-        out = self.drop2(out)
-        return out
+        h1, h2 = self.gcn(x).chunk(2, dim=-1)
+        out = self.fc1(x) + torch.cat([adj @ h1, adj.mT @ h2], dim=-1)
+        out = self.drop1(self.act(self.fc2(out)))
+        return self.drop2(out)
 
 
 class BatchedMoEGraphFFN(nn.Module):
     """
-    MoE-FFN，3个专家：
-      e0: self expert         -> W0 x
-      e1: in-neighbor expert  -> A   (W1 x)
-      e2: out-neighbor expert -> A^T (W2 x)
+    MoE-Graph FFN：3 个专家分别处理 self / in-neighbor / out-neighbor 信息。
     """
 
     def __init__(
         self,
         dim: int,
         mlp_ratio: float = 4.0,
-        out_features: int | None = None,
+        out_features: Optional[int] = None,
         act_layer: str = "relu",
         drop: float = 0.0,
         gate_hidden_ratio: float = 0.5,
@@ -193,12 +212,13 @@ class BatchedMoEGraphFFN(nn.Module):
         in_features = dim
         out_features = out_features or in_features
         hidden_features = int(mlp_ratio * in_features)
-        drop_probs = to_2tuple(drop)
+        p1, p2 = to_2tuple(drop)
 
         self.self_expert = nn.Linear(in_features, hidden_features, bias=False)
         self.in_expert = nn.Linear(in_features, hidden_features, bias=False)
         self.out_expert = nn.Linear(in_features, hidden_features, bias=False)
 
+        # --- 门控网络 ---
         gate_hidden = int(in_features * gate_hidden_ratio)
         if gate_hidden_ratio > 0:
             self.gate = nn.Sequential(
@@ -210,48 +230,48 @@ class BatchedMoEGraphFFN(nn.Module):
             self.gate = nn.Linear(in_features, 3, bias=False)
 
         self.temperature = float(temperature)
-
-        if act_layer.lower() == "relu":
-            self.act = nn.ReLU()
-        elif act_layer.lower() == "leaky_relu":
-            self.act = nn.LeakyReLU()
-        else:
-            raise ValueError(f"Unsupported activation: {act_layer}")
-
-        self.drop1 = nn.Dropout(drop_probs[0])
-        self.mix_norm = nn.LayerNorm(hidden_features)
+        self.act = make_activation(act_layer)
+        self.drop1 = nn.Dropout(p1)
         self.fc2 = nn.Linear(hidden_features, out_features, bias=False)
-        self.drop2 = nn.Dropout(drop_probs[1])
+        self.drop2 = nn.Dropout(p2)
 
     def forward(self, x: Tensor, adj: Tensor) -> tuple[Tensor, Tensor]:
+        """
+        返回 (输出, 路由熵惩罚)
+        """
         L = x.size(1)
         adj = adj.float()
         if self.has_cls:
-            adj[:, 0, :] = adj[:, :, 0] = 0
+            adj[:, 0, :] = 0
+            adj[:, :, 0] = 0
         adj = adj.masked_fill(torch.eye(L, device=adj.device, dtype=torch.bool), 0)
 
+        # 三个专家的输出
         e0 = self.self_expert(x)
         e1 = torch.bmm(adj, self.in_expert(x))
         e2 = torch.bmm(adj.transpose(1, 2), self.out_expert(x))
 
+        # 软门控加权
         w = F.softmax(self.gate(x) / self.temperature, dim=-1)
         out = w[..., 0:1] * e0 + w[..., 1:2] * e1 + w[..., 2:3] * e2
-        # out = self.mix_norm(out)
 
-        out = self.act(out)
-        out = self.drop1(out)
-        out = self.fc2(out)
+        out = self.drop1(self.act(self.fc2(out)))
         out = self.drop2(out)
 
         routing_penalty = (w * (w + 1e-8).log()).sum(dim=-1).mean()
         return out, routing_penalty
 
 
+# ============================================================
+# 编码器层
+# ============================================================
+
+
 class GraphTransformerLayer(nn.Module):
     """
-    Pre-norm Transformer 层。
-    self-attention 使用手动实现的 MultiHeadAttention（仿 nnencoder），
-    FFN 使用 MoE-Graph FFN。
+    Pre-norm Transformer 层：
+      1. Multi-Head Self-Attention（带结构感知偏置）
+      2. MoE-Graph FFN
     """
 
     def __init__(
@@ -266,7 +286,6 @@ class GraphTransformerLayer(nn.Module):
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.self_attn = MultiHeadAttention(d_model, n_head, dropout)
-        # self.ffn = GINMlp(d_model, mlp_ratio=mlp_ratio, act_layer=activation, drop=dropout)
         self.ffn = BatchedMoEGraphFFN(
             d_model, mlp_ratio=mlp_ratio, act_layer=activation, drop=dropout
         )
@@ -275,14 +294,25 @@ class GraphTransformerLayer(nn.Module):
         self, x: Tensor, adj: Tensor, distance: Optional[Tensor] = None
     ) -> tuple[Tensor, Tensor]:
         x = x + self.self_attn(self.norm1(x), adj, distance)
-        # x = x + self.ffn(self.norm2(x), adj)
-        ffn_out, penalty = self.ffn(self.norm2(x), adj)  # MoE 版本
+        ffn_out, penalty = self.ffn(self.norm2(x), adj)
         x = x + ffn_out
-        return x, torch.zeros((), device=x.device)
+        return x, penalty
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, d_model, d_ff_ratio, gcn_layers, n_head=4, activation="relu"):
+    """
+    多层 GraphTransformerEncoder。
+    邻接矩阵预处理在入口处执行一次，各层复用。
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        d_ff_ratio: float,
+        gcn_layers: int,
+        n_head: int = 4,
+        activation: str = "relu",
+    ):
         super().__init__()
         self.layers = nn.ModuleList(
             [
@@ -297,11 +327,10 @@ class TransformerEncoder(nn.Module):
             ]
         )
 
-    def forward(self, x: Tensor, adj: Tensor, distance: Optional[Tensor] = None):
-        # adj 预处理（仿 nnencoder，放在 encoder 入口做一次，各层复用）
-        adj = adj.clone()
-        adj = adj.masked_fill(torch.logical_and(adj > 1, adj < 9), 0)
-        adj = adj.masked_fill(adj != 0, 1).float()
+    def forward(
+        self, x: Tensor, adj: Tensor, distance: Optional[Tensor] = None
+    ) -> tuple[Tensor, Tensor]:
+        adj = preprocess_adj(adj, x.size(1))
         penalties = []
         for layer in self.layers:
             x, penalty = layer(x, adj, distance)
@@ -311,42 +340,60 @@ class TransformerEncoder(nn.Module):
         return x, aux_loss
 
 
+# ============================================================
+# 主模型
+# ============================================================
+
+
 @register_model("model56")
 class Net(nn.Module):
+    """
+    Graph Transformer 主模型。
+
+    数据流程：
+      1. get_data()        -> 从 sample 中提取原始特征
+      2. _embed_features() -> one-hot 编码 + 线性投影
+      3. _add_pe()         -> 叠加 Magnetic Laplacian PE
+      4. _add_cls_token()  -> 添加 [CLS] token 并扩展 adj/distance
+      5. encoder()          -> 多层 GraphTransformer
+      6. _readout()        -> 汇聚图级表示
+      7. predictor()        -> 预测回归值
+    """
+
+    # 各特征 one-hot 编码维度
+    NUM_OPS = 32
+    NUM_DEGREE = 32
+    NUM_DEPTH_NASBENCH = 32
+    NUM_DEPTH_NNLQP = 128
+
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.num_node_features = 32
+        self.dataset = config.dataset
+
+        # --- 超参数解析 ---
         self.d_model = int(getattr(config, "d_model", 192))
-        self.dropout = float(getattr(config, "dropout", 0.10))
+        self.dropout = float(getattr(config, "dropout", 0.1))
         self.gcn_layers = int(getattr(config, "gcn_layers", 2))
         self.graph_readout = str(getattr(config, "graph_readout", "cls"))
         self.d_ff_ratio = float(getattr(config, "d_ff_ratio", 4))
-        self.graph_n_head = int(
-            getattr(config, "graph_n_head", 6)
-        )  # 默认 6，与 6 个 pe 矩阵对齐
+        self.graph_n_head = int(getattr(config, "graph_n_head", 6))
         self.act_layer = str(getattr(config, "act_layer", "relu"))
         self.use_aux_loss = bool(getattr(config, "use_aux_loss", False))
-        pe_k = int(getattr(config, "pe_k", 5))
+        self.pe_k = int(getattr(config, "pe_k", 5))
+
+        # --- 特征嵌入层 ---
+        self._build_embedding_layers()
+
+        # --- PE 编码器 ---
         pe_hidden = min(self.d_model, 128)
-
-        if self.graph_readout == "cls":
-            self.cls_token = nn.Parameter(torch.zeros(1, 1, self.d_model))
-        else:
-            self.cls_token = None
-
-        self.op_embed = nn.Linear(self.num_node_features, self.d_model)
-        self.in_degree_embed = nn.Linear(32, self.d_model)
-        self.out_degree_embed = nn.Linear(32, self.d_model)
-        self.depth_embed = nn.Linear(32, self.d_model)
-        self.embed_proj = nn.Linear(4 * self.d_model, self.d_model)
-
         self.ml_encoder = MagLapEncoder(
-            k=pe_k,
+            k=self.pe_k,
             hidden_dim=pe_hidden,
             output_dim=self.d_model,
         )
 
+        # --- 主编码器 ---
         self.encoder = TransformerEncoder(
             self.d_model,
             self.d_ff_ratio,
@@ -355,91 +402,153 @@ class Net(nn.Module):
             self.act_layer,
         )
 
+        # --- 预测头 ---
         self.post_norm = nn.LayerNorm(self.d_model)
         if self.graph_readout == "att":
             self.att_pool = nn.Linear(self.d_model, 1)
         self.predictor = nn.Linear(self.d_model, 1)
 
-        self.init_weights()
+        self._init_weights()
 
-    def get_data(self, sample, static_feature):
-        x = sample["ops"]
-        adj = sample["code_adj"]
-        in_degree = sample["in_degree"]
-        out_degree = sample["out_degree"]
-        depth = sample["op_depth"]
-        distance = sample["distance"]
-        return x, adj, in_degree, out_degree, depth, distance
+    # --------------------------------------------------
+    # 构建方法
+    # --------------------------------------------------
 
-    def _add_cls_token(
-        self, x: Tensor, adj: Tensor, distance: Tensor
-    ) -> tuple[Tensor, Tensor, Tensor]:
+    def _build_embedding_layers(self):
+        """构建操作嵌入、入度/出度嵌入、深度嵌入。"""
         if self.graph_readout == "cls":
-            num_nodes = adj.size(1)
-            new_adj = torch.ones(
-                adj.size(0), num_nodes + 1, num_nodes + 1, device=adj.device
-            )
-            new_adj[:, 1:, 1:] = adj
-            adj = new_adj
-            new_dist = torch.ones(
-                distance.size(0), num_nodes + 1, num_nodes + 1, device=distance.device
-            )
-            new_dist[:, 1:, 1:] = distance
-            distance = new_dist
-            cls_token = self.cls_token.expand(x.size(0), 1, self.d_model)
-            x = torch.cat([cls_token, x], dim=1)
-        return x, adj, distance
-
-    def _embed_features(
-        self, x: Tensor, in_degree: Tensor, out_degree: Tensor, depth: Tensor
-    ) -> Tensor:
-        x = self.op_embed(F.one_hot(x.long(), num_classes=32).float())
-        in_deg = self.in_degree_embed(
-            F.one_hot(in_degree.long(), num_classes=32).float()
-        )
-        out_deg = self.out_degree_embed(
-            F.one_hot(out_degree.long(), num_classes=32).float()
-        )
-        dep = self.depth_embed(depth.float())
-        return self.embed_proj(torch.cat([x, in_deg, out_deg, dep], dim=-1))
-
-    def forward(self, sample, static_feature):
-        x, adj, in_degree, out_degree, depth, distance = self.get_data(
-            sample, static_feature
-        )
-
-        x = self._embed_features(x, in_degree, out_degree, depth)
-
-        pe_ml = self.ml_encoder(sample["dir_pe_ml"])
-        x = x + pe_ml
-
-        x, adj, distance = self._add_cls_token(x, adj, distance)
-
-        x, aux_loss = self.encoder(x, adj, distance)
-
-        x = self.post_norm(x)
-
-        if self.graph_readout == "cls":
-            graph_feat = x[:, 0, :]
-        elif self.graph_readout == "att":
-            att_logit = self.att_pool(x).squeeze(-1)
-            att_weight = torch.softmax(att_logit, dim=1).unsqueeze(-1)
-            graph_feat = (x * att_weight).sum(dim=1)
+            self.cls_token = nn.Parameter(torch.zeros(1, 1, self.d_model))
         else:
-            raise ValueError(f"Unsupported graph_readout: {self.graph_readout}")
+            self.cls_token = None
 
-        predict = self.predictor(graph_feat)
-        return predict, aux_loss if self.use_aux_loss else 0
+        depth_dim = (
+            self.NUM_DEPTH_NNLQP if self.dataset == "nnlqp" else self.NUM_DEPTH_NASBENCH
+        )
 
-    def init_weights(self):
-        self.apply(self._init_weights)
+        self.op_embed = nn.Linear(self.NUM_OPS, self.d_model)
+        self.in_degree_embed = nn.Linear(self.NUM_DEGREE, self.d_model)
+        self.out_degree_embed = nn.Linear(self.NUM_DEGREE, self.d_model)
+        self.depth_embed = nn.Linear(depth_dim, self.d_model)
+        self.embed_proj = nn.Linear(4 * self.d_model, self.d_model)
+
+    def _init_weights(self):
+        self.apply(self._init_module_weights)
         if self.cls_token is not None:
             nn.init.trunc_normal_(self.cls_token, std=0.02)
 
-    def _init_weights(self, m):
+    @staticmethod
+    def _init_module_weights(m: nn.Module):
         if isinstance(m, (nn.Conv2d, nn.Linear)):
             nn.init.trunc_normal_(m.weight, std=0.02)
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.Embedding):
             nn.init.constant_(m.weight, 0.02)
+
+    # --------------------------------------------------
+    # 数据提取与预处理
+    # --------------------------------------------------
+
+    def get_data(self, sample, static_feature):
+        """从 sample 中提取模型所需的所有原始特征。"""
+        adj_key = "code_adj" if "nasbench" not in self.dataset else "adj"
+        return (
+            sample["ops"],
+            sample[adj_key],
+            sample["in_degree"],
+            sample["out_degree"],
+            sample["op_depth"],
+            sample["distance"],
+        )
+
+    def _embed_features(
+        self, ops: Tensor, in_degree: Tensor, out_degree: Tensor, depth: Tensor
+    ) -> Tensor:
+        """
+        将原始特征 one-hot 编码后投影到 d_model 维：
+          [op_embed, in_degree_embed, out_degree_embed, depth_embed]
+        """
+        if ops.dim() == 3:
+            ops = ops.squeeze(-1)
+
+        # depth: nasbench 用 one-hot，nnlqp 已预编码为 one-hot
+        if self.dataset == "nnlqp":
+            depth_enc = F.one_hot(
+                depth.long(), num_classes=self.NUM_DEPTH_NNLQP
+            ).float()
+        else:
+            depth_enc = F.one_hot(
+                depth.long(), num_classes=self.NUM_DEPTH_NASBENCH
+            ).float()
+
+        ops_enc = self.op_embed(F.one_hot(ops.long(), num_classes=self.NUM_OPS).float())
+        in_enc = self.in_degree_embed(
+            F.one_hot(in_degree.long(), num_classes=self.NUM_DEGREE).float()
+        )
+        out_enc = self.out_degree_embed(
+            F.one_hot(out_degree.long(), num_classes=self.NUM_DEGREE).float()
+        )
+        dep_enc = self.depth_embed(depth_enc)
+
+        return self.embed_proj(torch.cat([ops_enc, in_enc, out_enc, dep_enc], dim=-1))
+
+    def _add_pe(self, x: Tensor, sample) -> Tensor:
+        """叠加 Magnetic Laplacian Position Encoding。"""
+        pe = self.ml_encoder(sample["dir_pe_ml"])
+        return x + pe
+
+    def _add_cls_token(
+        self, x: Tensor, adj: Tensor, distance: Tensor
+    ) -> tuple[Tensor, Tensor, Tensor]:
+        """在图前添加 [CLS] token 并相应扩展邻接矩阵和距离矩阵。"""
+        if self.graph_readout != "cls":
+            return x, adj, distance
+
+        B, L = x.size(0), adj.size(1)
+        new_adj = torch.ones(B, L + 1, L + 1, device=adj.device)
+        new_adj[:, 1:, 1:] = adj
+
+        new_dist = torch.ones(B, L + 1, L + 1, device=distance.device)
+        new_dist[:, 1:, 1:] = distance
+
+        cls_token = self.cls_token.expand(B, 1, self.d_model)
+        return torch.cat([cls_token, x], dim=1), new_adj, new_dist
+
+    def _readout(self, x: Tensor) -> Tensor:
+        """图级表示汇聚。"""
+        if self.graph_readout == "cls":
+            return x[:, 0, :]
+        elif self.graph_readout == "att":
+            w = torch.softmax(self.att_pool(x).squeeze(-1), dim=1).unsqueeze(-1)
+            return (x * w).sum(dim=1)
+        else:
+            raise ValueError(f"Unsupported graph_readout: {self.graph_readout}")
+
+    # --------------------------------------------------
+    # 前向传播
+    # --------------------------------------------------
+
+    def forward(self, sample, static_feature) -> tuple[Tensor, Tensor]:
+        # 1. 提取原始数据
+        ops, adj, in_degree, out_degree, depth, distance = self.get_data(
+            sample, static_feature
+        )
+
+        # 2. 特征嵌入
+        x = self._embed_features(ops, in_degree, out_degree, depth)
+
+        # 3. 叠加位置编码
+        x = self._add_pe(x, sample)
+
+        # 4. 添加 [CLS] token
+        x, adj, distance = self._add_cls_token(x, adj, distance)
+
+        # 5. 主编码器
+        x, aux_loss = self.encoder(x, adj, distance)
+        x = self.post_norm(x)
+
+        # 6. 图汇聚 + 预测
+        graph_feat = self._readout(x)
+        predict = self.predictor(graph_feat)
+
+        return predict, aux_loss if self.use_aux_loss else 0

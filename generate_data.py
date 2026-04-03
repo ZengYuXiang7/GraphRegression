@@ -5,6 +5,7 @@ import argparse
 import json
 import tqdm
 from nnformer.models.encoders import tokenizer
+import torch.nn.functional as F
 
 
 def parse_args():
@@ -283,9 +284,12 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
     adj = archs[index]["module_adjacency"]
     depth = len([op for op in ops if op != 5])  # `op == 5` indicates `none`
     op_depth_raw = bfs_depth_from_start(adj)
-    code, rel_pos, code_depth, op_depth = tokenizer(
-        ops, adj, depth, op_depth_raw, enc_dim, embed_type
-    )
+    # code, rel_pos, code_depth, op_depth = tokenizer(
+        # ops, adj, depth, op_depth_raw, enc_dim, embed_type
+    # )
+    # print(op_depth_raw)
+    op_depth_raw = [d if d >= 0 else 0 for d in op_depth_raw]
+    op_depth = torch.tensor(op_depth_raw).to(torch.int8)
     distance = compute_shortest_path_distance(np.array(adj))
     in_degree, out_degree = compute_node_degrees(np.array(adj))
     adj_np = np.array(adj)
@@ -299,9 +303,9 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
         "test_accuracy_avg": archs[index]["test_accuracy_avg"],
         "valid_accuracy": archs[index]["validation_accuracy"],
         "valid_accuracy_avg": archs[index]["validation_accuracy_avg"],
-        "code": code,
-        "code_rel_pos": rel_pos,
-        "code_depth": code_depth,
+        # "code": code,
+        # "code_rel_pos": rel_pos,
+        # "code_depth": code_depth,
         "op_depth": op_depth,
         "op_depth_raw": op_depth_raw,
         "distance": distance,

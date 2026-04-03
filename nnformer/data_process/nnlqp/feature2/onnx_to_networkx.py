@@ -14,11 +14,14 @@ def onnx2nx(onnx_path):
     WARNINGS.clear()
 
     if isinstance(onnx_path, str):
-        assert(os.path.exists(onnx_path))
+        assert os.path.exists(onnx_path)
         switch_print("Read Onnx: {}".format(onnx_path))
         onnx_G = onnx.load(onnx_path)
     else:
-        assert isinstance(onnx_path, onnx.onnx_ml_pb2.ModelProto), "onnx2nx input should be str or ModelProto"
+        # assert isinstance(onnx_path, onnx.onnx_ml_pb2.ModelProto), "onnx2nx input should be str or ModelProto"
+        assert isinstance(
+            onnx_path, onnx.ModelProto
+        ), "onnx2nx input should be str or ModelProto"
         onnx_G = onnx_path
 
     nx_G = nx.DiGraph()
@@ -47,14 +50,16 @@ def onnx2nx(onnx_path):
     zero_indegree = [v for v, d in nx_G.in_degree() if d == 0]
     for node in zero_indegree:
         if nx_G.out_degree()[node] > 0 and node in switcher.input_sizes:
-            nx_G.add_nodes_from([(node, {'attr': AttrInput(name=node)})])
+            nx_G.add_nodes_from([(node, {"attr": AttrInput(name=node)})])
             input_sizes[node] = switcher.input_sizes[node]
         else:
             # zero input, zero output, delete the node
             nx_G.remove_node(node)
 
     if len(WARNINGS) > 0:
-        path_name = onnx_path.split('/')[-1] if isinstance(onnx_path, str) else "ModelProto"
+        path_name = (
+            onnx_path.split("/")[-1] if isinstance(onnx_path, str) else "ModelProto"
+        )
         switch_print("[{}] onnx -> networkx warnings: ".format(path_name))
         for w in WARNINGS:
             switch_print(" -- {}".format(w))
@@ -72,7 +77,7 @@ class PGraph:
 
 
 def switch_print(info):
-    logger = logging.getLogger('GPDB')
+    logger = logging.getLogger("GPDB")
     print(info)
     logger.info(info)
 
@@ -88,16 +93,22 @@ class Switcher:
         if opset_cnt <= 0:
             self.opsets = [9]
         else:
-            self.opsets = [self.onnx_G.opset_import[x].version for x in range(opset_cnt)]
+            self.opsets = [
+                self.onnx_G.opset_import[x].version for x in range(opset_cnt)
+            ]
 
         # input and params info
         for inp in self.onnx_G.graph.input:
-            self.input_sizes[inp.name] = tuple([x.dim_value for x in inp.type.tensor_type.shape.dim])
+            self.input_sizes[inp.name] = tuple(
+                [x.dim_value for x in inp.type.tensor_type.shape.dim]
+            )
         # some weight is not regarded as input
         for init in self.onnx_G.graph.initializer:
             self.input_sizes[init.name] = tuple(init.dims)
         for out in self.onnx_G.graph.output:
-            self.output_sizes[out.name] = tuple([x.dim_value for x in out.type.tensor_type.shape.dim])
+            self.output_sizes[out.name] = tuple(
+                [x.dim_value for x in out.type.tensor_type.shape.dim]
+            )
 
     def parse_node(self, node):
         try:
@@ -119,7 +130,7 @@ class Switcher:
 
     # parse onnx attribute of op node
     def parse_attrs(self, node_attrs, dims_only=False):
-        attrs = {'opsets': self.opsets}
+        attrs = {"opsets": self.opsets}
         for attr in node_attrs:
             if attr.type == onnx.AttributeProto.AttributeType.INTS:
                 attrs[attr.name] = tuple(attr.ints)
@@ -144,15 +155,15 @@ class Switcher:
         G_nodes = []
         if len(conn_output_ids) == 1:
             idx = conn_output_ids[0]
-            G_nodes.append((node.output[idx], {'attr': G_attr}))
+            G_nodes.append((node.output[idx], {"attr": G_attr}))
 
         else:
             # multi output
             for idx in conn_output_ids:
                 G_attr_cur = copy.deepcopy(G_attr)
-                G_attr_cur.attributes['output_num'] = len(conn_output_ids)
-                G_attr_cur.attributes['output_idx'] = idx
-                G_nodes.append((node.output[idx], {'attr': G_attr_cur}))
+                G_attr_cur.attributes["output_num"] = len(conn_output_ids)
+                G_attr_cur.attributes["output_idx"] = idx
+                G_nodes.append((node.output[idx], {"attr": G_attr_cur}))
 
         G_edges = []
         for idx in conn_input_ids:
@@ -162,31 +173,46 @@ class Switcher:
         return G_nodes, G_edges
 
     # assert the number of input and output
-    def assert_node_input_output(self, node, input_nums, output_nums,
-                                    input_low_bound=None, output_low_bound=None):
+    def assert_node_input_output(
+        self, node, input_nums, output_nums, input_low_bound=None, output_low_bound=None
+    ):
         in_num, out_num = len(node.input), len(node.output)
 
         if input_nums is not None and in_num not in input_nums:
-            raise Exception("Input num of <{}> = {}, which are not in {}!". \
-                            format(node.op_type, in_num, input_nums))
+            raise Exception(
+                "Input num of <{}> = {}, which are not in {}!".format(
+                    node.op_type, in_num, input_nums
+                )
+            )
 
         if output_nums is not None and out_num not in output_nums:
-            raise Exception("Output num of <{}> = {}, which are not in {}!". \
-                            format(node.op_type, out_num, output_nums))
+            raise Exception(
+                "Output num of <{}> = {}, which are not in {}!".format(
+                    node.op_type, out_num, output_nums
+                )
+            )
 
         if input_low_bound is not None and in_num < input_low_bound:
-            raise Exception("Input num of <{}> = {}, which are not >= {}!". \
-                            format(node.op_type, in_num, input_low_bound))
+            raise Exception(
+                "Input num of <{}> = {}, which are not >= {}!".format(
+                    node.op_type, in_num, input_low_bound
+                )
+            )
 
         if output_low_bound is not None and out_num < output_low_bound:
-            raise Exception("Output num of <{}> = {}, which are not >= {}!". \
-                            format(node.op_type, out_num, output_low_bound))
+            raise Exception(
+                "Output num of <{}> = {}, which are not >= {}!".format(
+                    node.op_type, out_num, output_low_bound
+                )
+            )
 
     # parse the general node without additional attributes
     def parse_general_node(self, node, AttrOp, conn_input_ids, conn_output_ids):
         attrs = self.parse_attrs(node.attribute)
-        G_attr = AttrOp(name = node.output[0], **attrs)
-        return self.get_networkx_node_edges(node, G_attr, conn_input_ids, conn_output_ids)
+        G_attr = AttrOp(name=node.output[0], **attrs)
+        return self.get_networkx_node_edges(
+            node, G_attr, conn_input_ids, conn_output_ids
+        )
 
     # ------------------------------------------------------------------------------------
     #                             For each onnx op type
@@ -261,9 +287,12 @@ class Switcher:
             var_size = self.input_sizes[node.input[4]]
             conn_input_ids.remove(4)
 
-        G_attr = AttrBatchNormalization(scale_size, B_size, mean_size, var_size,
-                    name = node.output[0], **attrs)
-        return self.get_networkx_node_edges(node, G_attr, conn_input_ids, range(len(node.output)))
+        G_attr = AttrBatchNormalization(
+            scale_size, B_size, mean_size, var_size, name=node.output[0], **attrs
+        )
+        return self.get_networkx_node_edges(
+            node, G_attr, conn_input_ids, range(len(node.output))
+        )
 
     def parseBitShift(self, node):
         self.assert_node_input_output(node, [2], [1])
@@ -302,9 +331,9 @@ class Switcher:
         attrs = self.parse_attrs(node.attribute, dims_only=True)
 
         # Constant node could be weight param of conv node
-        self.input_sizes[node.output[0]] = attrs['value']
+        self.input_sizes[node.output[0]] = attrs["value"]
 
-        G_attr = AttrConstant(name = node.output[0], **attrs)
+        G_attr = AttrConstant(name=node.output[0], **attrs)
         return self.get_networkx_node_edges(node, G_attr, [], [0])
 
     def parseConstantOfShape(self, node):
@@ -320,17 +349,19 @@ class Switcher:
         if node.input[1] in self.input_sizes:
             # param
             output_channel, input_channel = self.input_sizes[node.input[1]][:2]
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = self.input_sizes[node.input[1]][-2:]
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = self.input_sizes[node.input[1]][-2:]
         else:
             # weight as node
             output_channel, input_channel = -1, -1
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = -1
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = -1
             conn_input_ids.append(1)
         bias = True if len(node.input) == 3 else False
 
-        G_attr = AttrConv(input_channel, output_channel, bias, name = node.output[0], **attrs)
+        G_attr = AttrConv(
+            input_channel, output_channel, bias, name=node.output[0], **attrs
+        )
         return self.get_networkx_node_edges(node, G_attr, conn_input_ids, [0])
 
     def parseConvInteger(self, node):
@@ -342,16 +373,18 @@ class Switcher:
         if node.input[1] in self.input_sizes:
             # param
             output_channel, input_channel = self.input_sizes[node.input[1]][:2]
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = self.input_sizes[node.input[1]][-2:]
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = self.input_sizes[node.input[1]][-2:]
             conn_input_ids.remove(1)
         else:
             # weight as node
             output_channel, input_channel = -1, -1
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = -1
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = -1
 
-        G_attr = AttrConvInteger(input_channel, output_channel, name = node.output[0], **attrs)
+        G_attr = AttrConvInteger(
+            input_channel, output_channel, name=node.output[0], **attrs
+        )
         return self.get_networkx_node_edges(node, G_attr, conn_input_ids, [0])
 
     def parseConvTranspose(self, node):
@@ -363,17 +396,19 @@ class Switcher:
         if node.input[1] in self.input_sizes:
             # param
             output_channel, input_channel = self.input_sizes[node.input[1]][:2]
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = self.input_sizes[node.input[1]][-2:]
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = self.input_sizes[node.input[1]][-2:]
         else:
             # weight as node
             output_channel, input_channel = -1, -1
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = -1
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = -1
             conn_input_ids.append(1)
         bias = True if len(node.input) == 3 else False
 
-        G_attr = AttrConvTranspose(input_channel, output_channel, bias, name = node.output[0], **attrs)
+        G_attr = AttrConvTranspose(
+            input_channel, output_channel, bias, name=node.output[0], **attrs
+        )
         return self.get_networkx_node_edges(node, G_attr, conn_input_ids, [0])
 
     def parseCos(self, node):
@@ -394,7 +429,9 @@ class Switcher:
 
     def parseDequantizeLinear(self, node):
         self.assert_node_input_output(node, [2, 3], [1])
-        return self.parse_general_node(node, AttrDequantizeLinear, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrDequantizeLinear, range(len(node.input)), [0]
+        )
 
     def parseDet(self, node):
         self.assert_node_input_output(node, [1], [1])
@@ -406,7 +443,9 @@ class Switcher:
 
     def parseDropout(self, node):
         self.assert_node_input_output(node, [1, 2, 3], [1, 2])
-        return self.parse_general_node(node, AttrDropout, range(len(node.input)), range(len(node.output)))
+        return self.parse_general_node(
+            node, AttrDropout, range(len(node.input)), range(len(node.output))
+        )
 
     def parseDynamicQuantizeLinear(self, node):
         self.assert_node_input_output(node, [1], [3])
@@ -450,7 +489,9 @@ class Switcher:
 
     def parseGRU(self, node):
         self.assert_node_input_output(node, [3, 4, 5, 6], [0, 1, 2])
-        return self.parse_general_node(node, AttrGRU, range(len(node.input)), range(len(node.output)))
+        return self.parse_general_node(
+            node, AttrGRU, range(len(node.input)), range(len(node.output))
+        )
 
     def parseGather(self, node):
         self.assert_node_input_output(node, [2], [1])
@@ -472,7 +513,7 @@ class Switcher:
         conn_input_ids = [0]
         if node.input[1] in self.input_sizes:
             # params
-            if 'transB' in attrs and attrs['transB'] != 0:
+            if "transB" in attrs and attrs["transB"] != 0:
                 output_size, input_size = self.input_sizes[node.input[1]][:2]
             else:
                 input_size, output_size = self.input_sizes[node.input[1]][:2]
@@ -535,7 +576,9 @@ class Switcher:
             B_size = self.input_sizes[node.input[2]]
             conn_input_ids.remove(2)
 
-        G_attr = AttrInstanceNormalization(scale_size, B_size, name = node.output[0], **attrs)
+        G_attr = AttrInstanceNormalization(
+            scale_size, B_size, name=node.output[0], **attrs
+        )
         return self.get_networkx_node_edges(node, G_attr, conn_input_ids, [0])
 
     def parseIsInf(self, node):
@@ -552,7 +595,9 @@ class Switcher:
 
     def parseLSTM(self, node):
         self.assert_node_input_output(node, [3, 4, 5, 6, 7, 8], [0, 1, 2, 3])
-        return self.parse_general_node(node, AttrGRU, range(len(node.input)), range(len(node.output)))
+        return self.parse_general_node(
+            node, AttrGRU, range(len(node.input)), range(len(node.output))
+        )
 
     def parseLeakyRelu(self, node):
         self.assert_node_input_output(node, [1], [1])
@@ -575,8 +620,12 @@ class Switcher:
         return self.parse_general_node(node, AttrLogSoftmax, [0], [0])
 
     def parseLoop(self, node):
-        self.assert_node_input_output(node, None, None, input_low_bound=2, output_low_bound=1)
-        return self.parse_general_node(node, AttrGRU, range(len(node.input)), range(len(node.output)))
+        self.assert_node_input_output(
+            node, None, None, input_low_bound=2, output_low_bound=1
+        )
+        return self.parse_general_node(
+            node, AttrGRU, range(len(node.input)), range(len(node.output))
+        )
 
     def parseLpNormalization(self, node):
         self.assert_node_input_output(node, [1], [1])
@@ -592,7 +641,9 @@ class Switcher:
 
     def parseMatMulInteger(self, node):
         self.assert_node_input_output(node, [2, 3, 4], [1])
-        return self.parse_general_node(node, AttrMatMulInteger, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrMatMulInteger, range(len(node.input)), [0]
+        )
 
     def parseMax(self, node):
         self.assert_node_input_output(node, None, [1], input_low_bound=1)
@@ -640,11 +691,15 @@ class Switcher:
 
     def parseNegativeLogLikelihoodLoss(self, node):
         self.assert_node_input_output(node, [2, 3], [1])
-        return self.parse_general_node(node, AttrNegativeLogLikelihoodLoss, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrNegativeLogLikelihoodLoss, range(len(node.input)), [0]
+        )
 
     def parseNonMaxSuppression(self, node):
         self.assert_node_input_output(node, [2, 3, 4, 5], [1])
-        return self.parse_general_node(node, AttrNonMaxSuppression, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrNonMaxSuppression, range(len(node.input)), [0]
+        )
 
     def parseNonZero(self, node):
         self.assert_node_input_output(node, [1], [1])
@@ -683,29 +738,37 @@ class Switcher:
         if node.input[3] in self.input_sizes:
             # param
             output_channel, input_channel = self.input_sizes[node.input[3]][:2]
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = self.input_sizes[node.input[3]][-2:]
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = self.input_sizes[node.input[3]][-2:]
             conn_input_ids.remove(3)
         else:
             # weight as node
             output_channel, input_channel = -1, -1
-            if 'kernel_shape' not in attrs:
-                attrs['kernel_shape'] = -1
+            if "kernel_shape" not in attrs:
+                attrs["kernel_shape"] = -1
 
-        G_attr = AttrQLinearConv(input_channel, output_channel, name = node.output[0], **attrs)
+        G_attr = AttrQLinearConv(
+            input_channel, output_channel, name=node.output[0], **attrs
+        )
         return self.get_networkx_node_edges(node, G_attr, conn_input_ids, [0])
 
     def parseQLinearMatMul(self, node):
         self.assert_node_input_output(node, [8], [1])
-        return self.parse_general_node(node, AttrQLinearMatMul, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrQLinearMatMul, range(len(node.input)), [0]
+        )
 
     def parseQuantizeLinear(self, node):
         self.assert_node_input_output(node, [2, 3], [1])
-        return self.parse_general_node(node, AttrQuantizeLinear, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrQuantizeLinear, range(len(node.input)), [0]
+        )
 
     def parseRNN(self, node):
         self.assert_node_input_output(node, [3, 4, 5, 6], [0, 1, 2])
-        return self.parse_general_node(node, AttrRNN, range(len(node.input)), range(len(node.output)))
+        return self.parse_general_node(
+            node, AttrRNN, range(len(node.input)), range(len(node.output))
+        )
 
     def parseRandomNormal(self, node):
         self.assert_node_input_output(node, [0], [1])
@@ -781,8 +844,8 @@ class Switcher:
 
         # opset = [1, 5), length of node input == 1 and attr has shape
         conn_input_ids = [0]
-        if 'shape' in attrs:
-            shapes = attrs['shape']
+        if "shape" in attrs:
+            shapes = attrs["shape"]
         else:
             if node.input[1] in self.input_sizes:
                 # params
@@ -792,7 +855,7 @@ class Switcher:
                 shapes = ()
                 conn_input_ids.append(1)
 
-        G_attr = AttrReshape(shapes, name = node.output[0], **attrs)
+        G_attr = AttrReshape(shapes, name=node.output[0], **attrs)
         return self.get_networkx_node_edges(node, G_attr, conn_input_ids, [0])
 
     def parseResize(self, node):
@@ -813,8 +876,12 @@ class Switcher:
         return self.parse_general_node(node, AttrRound, [0], [0])
 
     def parseScan(self, node):
-        self.assert_node_input_output(node, None, None, input_low_bound=1, output_low_bound=1)
-        return self.parse_general_node(node, AttrScan, range(len(node.input)), range(len(node.output)))
+        self.assert_node_input_output(
+            node, None, None, input_low_bound=1, output_low_bound=1
+        )
+        return self.parse_general_node(
+            node, AttrScan, range(len(node.input)), range(len(node.output))
+        )
 
     def parseScatter(self, node):
         self.assert_node_input_output(node, [3], [1])
@@ -838,7 +905,9 @@ class Switcher:
 
     def parseSequenceConstruct(self, node):
         self.assert_node_input_output(node, None, [1], input_low_bound=1)
-        return self.parse_general_node(node, AttrSequenceConstruct, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrSequenceConstruct, range(len(node.input)), [0]
+        )
 
     def parseSequenceEmpty(self, node):
         self.assert_node_input_output(node, [0], [1])
@@ -846,11 +915,15 @@ class Switcher:
 
     def parseSequenceErase(self, node):
         self.assert_node_input_output(node, [1, 2], [1])
-        return self.parse_general_node(node, AttrSequenceErase, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrSequenceErase, range(len(node.input)), [0]
+        )
 
     def parseSequenceInsert(self, node):
         self.assert_node_input_output(node, [2, 3], [1])
-        return self.parse_general_node(node, AttrSequenceInsert, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrSequenceInsert, range(len(node.input)), [0]
+        )
 
     def parseSequenceLength(self, node):
         self.assert_node_input_output(node, [1], [1])
@@ -894,7 +967,12 @@ class Switcher:
 
     def parseSoftmaxCrossEntropyLoss(self, node):
         self.assert_node_input_output(node, [2, 3], [1, 2])
-        return self.parse_general_node(node, AttrSoftmaxCrossEntropyLoss, range(len(node.input)), range(len(node.output)))
+        return self.parse_general_node(
+            node,
+            AttrSoftmaxCrossEntropyLoss,
+            range(len(node.input)),
+            range(len(node.output)),
+        )
 
     def parseSoftplus(self, node):
         self.assert_node_input_output(node, [1], [1])
@@ -910,11 +988,15 @@ class Switcher:
 
     def parseSplit(self, node):
         self.assert_node_input_output(node, [1, 2], None, output_low_bound=1)
-        return self.parse_general_node(node, AttrSplit, range(len(node.input)), range(len(node.output)))
+        return self.parse_general_node(
+            node, AttrSplit, range(len(node.input)), range(len(node.output))
+        )
 
     def parseSplitToSequence(self, node):
         self.assert_node_input_output(node, [1, 2], [1])
-        return self.parse_general_node(node, AttrSplitToSequence, range(len(node.input)), [0])
+        return self.parse_general_node(
+            node, AttrSplitToSequence, range(len(node.input)), [0]
+        )
 
     def parseSqrt(self, node):
         self.assert_node_input_output(node, [1], [1])

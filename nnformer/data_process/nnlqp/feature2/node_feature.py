@@ -1,20 +1,18 @@
 import numpy as np
-from .feature_utils import OPS, ATTRS, FEATURE_LENGTH
+from .feature_utils import OPS, ATTRS, FEATURE_LENGTH, FEATURE_DIM
+from nnformer.data_process.position_encoding import Embedder
 
-
-# int -> one hot embedding
-def embed_op_code(op_type):
-    length = FEATURE_LENGTH["op_code"]
+# int -> operation type embedding
+def embed_op_code(op_type, embed_type="nerf", input_type="np_array"):
+    length = FEATURE_LENGTH["op_type"]
+    dim = FEATURE_DIM["op_type"] // length
     if op_type not in OPS:
-        return np.zeros(length, dtype="float32")
+        return np.zeros(dim, dtype="float32")
     op_code = OPS[op_type]["code"] - 1
-    if op_code >= length:
-        raise Exception(
-            "op code of {}: {} greater than one-hot length {}!".format(
-                op_type, op_code, length
-            )
-        )
-    return np.eye(length, dtype="float32")[op_code]
+    op_code = EmbedValue.embed_int(op_code)
+    fn = Embedder(dim // 2, embed_type, input_type)
+    feat = fn(op_code)  # shape(64,)
+    return feat
 
 
 class EmbedValue:
@@ -54,11 +52,14 @@ class EmbedValue:
 
 
 # attrs embedding
-def embed_attrs(op_type, attrs):
+def embed_attrs(op_type, attrs, embed_type="nerf", input_type="np_array"):
     length = FEATURE_LENGTH["attrs"]
+    total_dim = FEATURE_DIM["attrs"]
+    dim = total_dim // length  # feature dim of each attribute
     if op_type not in OPS:
-        return np.zeros(length, dtype="float32")
+        return np.zeros(total_dim, dtype="float32")  # "data"(input) not in OPS
 
+    fn = Embedder(dim // 2, embed_type, input_type)
     feats = []
     for name in OPS[op_type]["attrs"]:
         assert (
@@ -69,54 +70,76 @@ def embed_attrs(op_type, attrs):
         )
 
         attr_value = attrs[name]
-        attr_def = ATTRS[name]
+        # code in NNLQP, norm
+        attr_def = ATTRS[name]  # e.g. attr_def = ("tuple", 1,  2.53,   56)
         feat = getattr(EmbedValue, "embed_" + attr_def[0])(attr_value, *attr_def[1:])
+        feat = fn(feat)  # (-1,dim)=(1,dim)
         feats.append(feat)
 
     # concat attr features
     feats = (
-        np.concatenate(feats) if len(feats) > 0 else np.zeros(length, dtype="float32")
-    )
+        np.concatenate(feats)
+        if len(feats) > 0
+        else np.zeros(total_dim, dtype="float32")
+    )  # (1, length*dim)
     feat_len = feats.size
-    if feat_len > length:
+    if feat_len > total_dim:
         raise Exception(
             "tuple length {} is grater than the embed length {}".format(
-                feat_len, length
+                feat_len, total_dim
             )
         )
-    if feat_len < length:
-        feats = np.concatenate([feats, np.zeros(length - feat_len, dtype="float32")])
+    if feat_len < total_dim:
+        feats = np.concatenate([feats, np.zeros(total_dim - feat_len, dtype="float32")])
+    return feats
+
+
+def embed_shape(shape, embed_type="nerf", input_type="np_array"):
+    length = FEATURE_LENGTH["output_shape"]
+    total_dim = FEATURE_DIM["output_shape"]
+    dim = total_dim // length
+
+    # shape_value = EmbedValue.embed_tuple(shape, length)
+    fn = Embedder(dim // 2, embed_type, input_type)
+    feats = []
+    for val in shape:
+        value = EmbedValue.embed_int(val)
+        feat = fn(value)
+        feats.append(feat)
+    feats = np.concatenate(feats)
+    feat_len = feats.size
+    if feat_len < total_dim:
+        feats = np.concatenate([feats, np.zeros(total_dim - feat_len, dtype="float32")])
     return feats
 
 
 # networkx_G -> op_code_embeddings & attrs_embeddings
 # output_shapes -> output_shape_embeddings
-def extract_node_features(networkx_G, output_shapes, batch_size):
+def extract_node_features(networkx_G, output_shapes, embed_type):
     embeddings = {}
 
-    for node in networkx_G.nodes.data():
-        attrs = node[1]["attr"].attributes
+    for (
+        node
+    ) in (
+        networkx_G.nodes.data()
+    ):  # node: ('472', {'attr': <predictor.feature.op_attribute.Attr{xxxoptype} object at 0x7f07bc1e9dc0>}); node[0]:node name; node[1]: Attr class
+        attrs = node[1][
+            "attr"
+        ].attributes  # attrs: includes type(conv, relu,...), other attributes（type=Conv,Maxpool,AveragePool,ConvTranspose）(kernel shape, stride...)
         node_name = node[0]
         op_type = attrs["type"]
 
-        # one hot op_code embedding
-        op_code_embedding = embed_op_code(op_type)
+        # encode operation type
+        op_code_embedding = embed_op_code(op_type, embed_type)
 
         # fixed length embedding for attrs, need normalize?
-        attrs_embedding = embed_attrs(op_type, attrs)
+        attrs_embedding = embed_attrs(op_type, attrs, embed_type)
 
         # fixed length embedding for output shape, need normalize?
         assert (
             node_name in output_shapes
         ), "could not find output shape for node {}".format(node_name)
-        output_shape_embedding = EmbedValue.embed_tuple(
-            output_shapes[node_name],
-            FEATURE_LENGTH["output_shape"],
-            [12.25, 286.96, 32.62, 31.80],
-            [1024, 2496, 256, 256],
-            # [11.02, 228.78, 48.94, 63.10],
-            # [28.38, 642.21, 78.54, 93.87],
-        )
+        output_shape_embedding = embed_shape(output_shapes[node_name], embed_type)
 
         # concat to the final node feature
         embeddings[node_name] = np.concatenate(

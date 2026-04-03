@@ -8,7 +8,7 @@ from .fixed_length_sampler import FixedLengthBatchSampler
 
 
 def init_dataset_NNLQP(
-    data_path, test_model_type, override_data, embed_type, finetuning
+    data_path, test_model_type, override_data, embed_type, finetuning, args
 ):
     data_root = os.path.join(data_path, "data")
     onnx_root = data_path
@@ -25,50 +25,31 @@ def init_dataset_NNLQP(
     train_model_types = model_types - test_model_types
     assert len(train_model_types) > 0
 
-    if finetuning:
-        train_set = GraphLatencyDataset(
-            data_root,
-            onnx_root,
-            all_latency_file,
-            embed_type,
-            override_data,
-            test_model_types,
-            n_finetuning=400,
-        )
-        test_set = GraphLatencyDataset(
-            data_root,
-            onnx_root,
-            all_latency_file,
-            embed_type,
-            override_data,
-            test_model_types,
-            n_finetuning=1600,
-        )
-    else:
-        train_set = GraphLatencyDataset(
-            data_root,
-            onnx_root,
-            all_latency_file,
-            embed_type,
-            model_types=train_model_types,
-            override_data=override_data,
-        )
-        test_set = GraphLatencyDataset(
-            data_root,
-            onnx_root,
-            all_latency_file,
-            embed_type,
-            model_types=test_model_types,
-            override_data=override_data,
-        )
+
+    train_set = GraphLatencyDataset(
+        data_root,
+        onnx_root,
+        all_latency_file,
+        model_types=train_model_types,
+        override_data=args.override_data,
+        config=args,
+    )
+    test_set = GraphLatencyDataset(
+        data_root,
+        onnx_root,
+        all_latency_file,
+        model_types=args.test_model_type,
+        override_data=args.override_data,
+        config=args,
+    )
 
     return train_set, test_set, train_model_types, test_model_types
 
 
 def init_dataloader(args, logger):
     # Load Dataset
-    args.data_path = f"data/{args.dataset}/all_{args.dataset}_{args.embed_type}.pt"
     if "nasbench" in args.dataset:
+        args.data_path = f"data/{args.dataset}/all_{args.dataset}_{args.embed_type}.pt"
         if args.do_train:
             runid = getattr(args, "runid", 0)
             trainset = NasbenchDataset(
@@ -132,12 +113,14 @@ def init_dataloader(args, logger):
             return dataLoader
 
     if args.dataset == "nnlqp":
+        args.data_path = f"data/{args.dataset}"
         trainset, testset, trtypes, tetypes = init_dataset_NNLQP(
             args.data_path,
             args.test_model_type,
             args.override_data,
             args.embed_type,
             args.finetuning,
+            args
         )
         logger.info("Train model types: {}".format(trtypes))
         logger.info("Test model types: {}".format(tetypes))

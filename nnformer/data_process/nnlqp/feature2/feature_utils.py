@@ -33,7 +33,7 @@ OPS = {
             "kernel_shape",
             "strides",
             "pads",
-            #"dilations",
+            # "dilations",
         ],
     },
     "Split": {
@@ -54,7 +54,7 @@ OPS = {
         "code": 10,
         "attrs": [
             "perm",
-        ]
+        ],
     },
     "Upsample": {
         "code": 11,
@@ -143,6 +143,7 @@ OPS = {
 }
 
 # define the value type of attr value, and its feature length
+"""
 ATTRS = {
     "kernel_shape"  : ("tuple", 1,  2.53,   56),
     "strides"       : ("tuple", 1,  1.16,   56),
@@ -153,10 +154,33 @@ ATTRS = {
     "perm"          : ("tuple", 8,  1.78,    4),
     "output_padding": ("tuple", 1,  0.00, 1e-5),
 }
+"""
+ATTRS = {
+    "kernel_shape": ("tuple", 1, 0, 1),
+    "strides": ("tuple", 1, 0, 1),
+    "pads": ("tuple", 1, 0, 1),
+    "dilations": ("tuple", 1, 0, 1),
+    "group": ("int", 0, 1),
+    "bias": ("bool", 0, 1),
+    "perm": ("tuple", 8, 0, 1),
+    "output_padding": ("tuple", 1, 0, 1),
+}
 
 # define the fixed length of feature op_code, attrs, output shape
 FEATURE_LENGTH = {
-    "op_code": 32,
+    "op_type": 1,
     "attrs": 8,
     "output_shape": 4,
+    "topology": 2,
+    "static": 4,
+}
+
+# define the fixed feature dim of each part after using position embedding
+# dim for each element of one part = FEATURE_DIM[name] // FEATURE_LENGTH[name]
+FEATURE_DIM = {
+    "op_type": 64,
+    "attrs": 512,
+    "output_shape": 256,
+    "topology": 128,
+    "static": 256,
 }

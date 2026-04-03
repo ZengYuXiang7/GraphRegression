@@ -276,9 +276,7 @@ class NasbenchDataset(Dataset):
 
     def preprocess_201(self, data):
         ops = torch.tensor(data["ops"], dtype=torch.int)
-        code = torch.tensor(data["code"], dtype=torch.float)
-        code_rel_pos = torch.tensor(data["code_rel_pos"], dtype=torch.int)
-        code_depth = torch.tensor(data["code_depth"], dtype=torch.float)
+        code_rel_pos = torch.tensor(data["adj"], dtype=torch.int)
         val_acc_avg = torch.Tensor([data["valid_accuracy_avg"]]) * 0.01
         test_acc_avg = torch.Tensor([data["test_accuracy_avg"]]) * 0.01
         op_depth = _to_tensor(data["op_depth"], torch.float32)
@@ -300,10 +298,10 @@ class NasbenchDataset(Dataset):
 
         result = {
             "ops": ops,
-            "code": code,
-            "code_rel_pos": code_rel_pos,
-            "code_adj": (code_rel_pos == 1).float(),
-            "code_depth": code_depth,
+            # "code": code,
+            # "code_rel_pos": code_rel_pos,
+            "adj": (code_rel_pos == 1).float(),
+            # "code_depth": code_depth,
             "val_acc_avg": val_acc_avg,
             "test_acc_avg": test_acc_avg,
             "op_depth": op_depth,

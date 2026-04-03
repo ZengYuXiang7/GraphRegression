@@ -39,15 +39,17 @@ class FixedLengthBatchSampler(Sampler):
         length_map = (
             {}
         )  # {70:[0, 23, 3332, ...], 110:[3, 421, 555, ...], length:[dataidx_0, dataidx_1, ...]}
+        
+        
         for i in range(len(self.data_source)):
             if self.dataset == "nnlqp":
-                length = self.data_source[i][0]["netcode"].shape[0]
+                length = self.data_source[i]["code_adj"].shape[0]
+                # length = len(self.data_source.data[i]["adj"])
             elif self.dataset == "nasbench201" or "nasbench101":
-                length = (
-                    len(self.data_source[i][0]["ops"])
-                    if len(self.data_source[i]) == 2
-                    else len(self.data_source[i]["ops"])
-                )
+                #     if len(self.data_source[i]) == 2
+                #     else len(self.data_source[i]["ops"])
+                # )
+                length = len(self.data_source.data[i]["adj"])
             if self.maxlen is not None and self.maxlen > 0 and length > self.maxlen:
                 continue
             length_map.setdefault(length, []).append(i)
@@ -96,7 +98,7 @@ class FixedLengthBatchSampler(Sampler):
         ## Optionally, add partial batches.
         if self.include_partial:
             for length, v in state.items():
-                if v["surplus"] >= torch.cuda.device_count():
+                if v["surplus"] >= max(torch.cuda.device_count(), 1):
                     order += [length]
 
         self.rng.shuffle(order)

@@ -91,6 +91,8 @@ def train(config, logger):
     early_stop_counter = 0
     stop_training = False
     tau_history = []
+    target_key = "val_acc_avg" if "nasbench" in config.dataset else "cost"
+    print(f"target_key: {target_key}")
     train_start_time = time.time()
     epoch_iter = (
         trange(start_epoch_idx, config.epochs)
@@ -116,7 +118,7 @@ def train(config, logger):
                     }
                 for k, v in batch_data.items():
                     batch_data[k] = v.to(config.device)
-                gt = batch_data["val_acc_avg"]
+                gt = batch_data[target_key]
 
                 # 兼容仅返回预测值的旧模型，以及 (logits, aux_loss) 的 DiffPool 模型
                 out = net(batch_data, None)
@@ -126,21 +128,15 @@ def train(config, logger):
                     logits, aux_loss = out, 0.0
 
             elif config.dataset == "nnlqp":
-                codes, gt, sf = (
-                    batch_data[0]["netcode"],
-                    batch_data[0]["cost"],
-                    batch_data[1],
-                )
-                codes, gt, sf = (
-                    codes.to(config.device),
-                    gt.to(config.device),
-                    sf.to(config.device),
-                )
-                out = net(None, None, codes, sf)
+                for k, v in batch_data.items():
+                    if isinstance(v, torch.Tensor):
+                        batch_data[k] = v.to(config.device)
+                out = net(batch_data, None)
                 if isinstance(out, tuple):
                     logits, aux_loss = out
                 else:
                     logits, aux_loss = out, 0.0
+                gt = batch_data[target_key]
 
             loss_dict = criterion(logits, gt)
 
@@ -261,9 +257,10 @@ def train(config, logger):
 def infer(dataloader, net, dataset, device=None, isTest=False):
     metric = Metric()
     net.eval()
+    target_key = "val_acc_avg" if "nasbench" in dataset else "cost"
     for bid, batch_data in enumerate(dataloader):
         if "nasbench" in dataset:
-            gt = batch_data["test_acc_avg"] if isTest else batch_data["val_acc_avg"]
+            gt = batch_data[target_key]
             if device != None:
                 for k, v in batch_data.items():
                     batch_data[k] = v.to(device)
@@ -381,8 +378,8 @@ def run_exp(runid, config):
         logger.warning(f"[WARN] best ckpt not found: {best_ckpt}")
 
     # 日志
+    train_tau = train_stats.get("best_tau")
     if tau is not None:
-        train_tau = train_stats.get("best_tau")
         train_tau_str = f"TrainKT {train_tau:8.5f} | " if train_tau is not None else ""
         logger.info(
             f"[EVAL-best]  {train_tau_str}KT {tau:8.5f}, MAPE {acc:8.5f}, ErrBnd(0.01) {err:8.5f}"

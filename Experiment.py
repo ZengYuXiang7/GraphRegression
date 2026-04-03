@@ -17,9 +17,9 @@ torch.set_default_dtype(torch.float32)
 
 def build_parser() -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rounds", default=2, type=int)
-    parser.add_argument("--dataset", default="nasbench101", type=str)
-    parser.add_argument("--model", default="model55", type=str)
+    parser.add_argument("--rounds", default=1, type=int)
+    parser.add_argument("--dataset", default="nasbench201", type=str)
+    parser.add_argument("--model", default="model56", type=str)
     parser.add_argument("--debug", default=0, type=int)
     args, unknown_args = parser.parse_known_args()
     return args, unknown_args
