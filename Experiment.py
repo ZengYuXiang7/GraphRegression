@@ -204,8 +204,8 @@ def save_result(metrics, log_filename, config):
         "dataset": config.dataset,
         "model": config.model,
         **{k: metrics[k] for k in metrics},
-        **{f"{k}_mean": np.mean(metrics[k]) for k in metrics},
-        **{f"{k}_std": np.std(metrics[k]) for k in metrics},
+        **{f"{k}_mean": np.mean([v for v in metrics[k] if v is not None]) if any(v is not None for v in metrics[k]) else None for k in metrics},
+        **{f"{k}_std": np.std([v for v in metrics[k] if v is not None]) if any(v is not None for v in metrics[k]) else None for k in metrics},
     }
     with open(f"./results/metrics/{log_filename}.pkl", "wb") as f:
         pickle.dump(result, f)
@@ -249,7 +249,11 @@ def RunExperiments(config):
     log(f"Experiment Detail: {exper_detail}")
     log("-" * 60)
     for key in metrics:
-        log(f"{key:10s}: {np.mean(metrics[key]):.4f} ± {np.std(metrics[key]):.4f}")
+        vals = [v for v in metrics[key] if v is not None]
+        if vals:
+            log(f"{key:10s}: {np.mean(vals):.4f} ± {np.std(vals):.4f}")
+        else:
+            log(f"{key:10s}: N/A")
 
     save_result(metrics, log_filename, config)
     log("*" * 20 + "Experiment Success" + "*" * 20)

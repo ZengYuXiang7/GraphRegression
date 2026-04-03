@@ -211,7 +211,7 @@ def gen_json_file(dataset):
     enum_dataset = enumerate_dataset(dataset)
     for data_point in enum_dataset:
         data_dict.update(data_point)
-    with open("data/nasbench201/{}.json".format(dataset), "w") as outfile:
+    with open("data/nasbench201/nasbench201.json".format(dataset), "w") as outfile:
         json.dump(data_dict, outfile)
 
 

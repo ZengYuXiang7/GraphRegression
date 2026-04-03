@@ -172,8 +172,8 @@ def train(config, logger):
                     net.state_dict(),
                     None,
                     None,
-                    False,
-                    config.dataset + "_model_best.pth.tar",
+                    is_best=True,
+                    fileName=config.dataset + "_model_best.pth.tar",
                 )
             elif config.patience > 0:
                 early_stop_counter += 1
@@ -229,16 +229,6 @@ def train(config, logger):
                 False,
                 config.dataset + "_checkpoint_Epoch" + str(epoch_idx + 1) + ".pth.tar",
             )
-        save_check_point(
-            epoch_idx + 1,
-            batch_idx + 1,
-            config,
-            net.state_dict(),
-            optimizer,
-            scheduler,
-            False,
-            config.dataset + "_latest.pth.tar",
-        )
         if stop_training:
             break
     save_tau_curve(tau_history, config, logger)
@@ -366,7 +356,7 @@ def run_exp(runid, config):
     test_loader = init_dataloader(args, logger)
 
     # 3) 跑两个 ckpt：best 和 best_ema
-    best_ckpt = os.path.join(results_dir, "nasbench101_model_best.pth.tar")
+    best_ckpt = os.path.join(results_dir, f"{args.dataset}_model_best.pth.tar")
 
     # base
     if os.path.isfile(best_ckpt):

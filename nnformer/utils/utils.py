@@ -1,3 +1,4 @@
+import os
 import random
 import shutil
 import numpy as np
@@ -92,17 +93,13 @@ def save_check_point(
         }
     path = config.save_path
     dataset = config.dataset
-    torch.save(state, path + "/" + fileName)
-    if is_best and epoch > (0.7 * config.epochs):
-        shutil.copyfile(
-            path + "/" + fileName, path + "/" + dataset + "_model_best.pth.tar"
-        )
-        shutil.copyfile(
-            path + "/" + fileName,
-            path
-            + "/"
-            + dataset
-            + "_model_best_epoch_"
-            + str(state["epoch"])
-            + ".pth.tar",
-        )
+    save_dir = path.rstrip("/")
+    os.makedirs(save_dir, exist_ok=True)
+    torch.save(state, os.path.join(save_dir, fileName))
+    
+    if is_best:
+        best_ckpt_path = os.path.join(save_dir, dataset + "_model_best.pth.tar")
+        src = os.path.join(save_dir, fileName)
+        if src != best_ckpt_path:
+            shutil.copyfile(src, best_ckpt_path)
+            print(f"[Checkpoint] Saved best checkpoint to: {best_ckpt_path}")
