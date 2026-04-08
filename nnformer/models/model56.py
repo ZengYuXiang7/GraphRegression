@@ -451,7 +451,11 @@ class Net(nn.Module):
 
     def get_data(self, sample, static_feature):
         """从 sample 中提取模型所需的所有原始特征。"""
-        adj_key = "code_adj" if "nasbench" not in self.dataset else "adj"
+        # 除了201，nnlqp，其他都用adj
+        if "201" in self.dataset or "nnlqp" in self.dataset:
+            adj_key = "adj"
+        else:
+            adj_key = "code_adj"
         return (
             sample["ops"],
             sample[adj_key],
@@ -476,10 +480,12 @@ class Net(nn.Module):
             depth_enc = F.one_hot(
                 depth.long(), num_classes=self.NUM_DEPTH_NNLQP
             ).float()
-        else:
+        elif self.dataset == 'nasbench201':
             depth_enc = F.one_hot(
                 depth.long(), num_classes=self.NUM_DEPTH_NASBENCH
             ).float()
+        else:
+            depth_enc = depth.float()
 
         ops_enc = self.op_embed(F.one_hot(ops.long(), num_classes=self.NUM_OPS).float())
         in_enc = self.in_degree_embed(

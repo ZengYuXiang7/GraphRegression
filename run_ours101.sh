@@ -26,5 +26,5 @@ for percent in $PERCENTS; do
         --lambda_consistency 0.0                \
         --rounds         "$ROUNDS"              \
         --tqdm           1                      \
-        --device         mps
+        --device         cuda
 done

@@ -277,8 +277,8 @@ class NasbenchDataset(Dataset):
     def preprocess_201(self, data):
         ops = torch.tensor(data["ops"], dtype=torch.int)
         code_rel_pos = torch.tensor(data["adj"], dtype=torch.int)
-        val_acc_avg = torch.Tensor([data["valid_accuracy_avg"]]) * 0.01
-        test_acc_avg = torch.Tensor([data["test_accuracy_avg"]]) * 0.01
+        val_acc_avg = _to_tensor([data["valid_accuracy_avg"]], torch.float32)
+        test_acc_avg = _to_tensor([data["test_accuracy_avg"]], torch.float32)
         op_depth = _to_tensor(data["op_depth"], torch.float32)
         in_degree = (
             _to_tensor(data.get("in_degree"), torch.int64)

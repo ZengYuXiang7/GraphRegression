@@ -78,7 +78,7 @@ def parse_args():
     parser.add_argument("--save_path", type=str, default="model/")
     parser.add_argument("--save_epoch_freq", type=int, default=1000)
     parser.add_argument("--pretrained_path", type=str, default=None)
-    parser.add_argument("--print_freq", type=int, default=10000)
+    parser.add_argument("--print_freq", type=int, default=50)
     parser.add_argument("--patience", type=int, default=1500, help="early stopping patience, <=0 disables")
 
     # ======================== Loss ========================
