@@ -22,8 +22,7 @@ nas_bench = API("data/nasbench201/NAS-Bench-201-v1_1-096897.pth")
 # example: '|nor_conv_3x3~0|+|nor_conv_3x3~0|avg_pool_3x3~1|+|skip_connect~0|nor_conv_3x3~1|skip_connect~2|'
 def info2mat(arch_index, dataset):
     # info.all_results
-
-    info = nas_bench.query_meta_info_by_index(arch_index)
+    arch_str = nas_bench.meta_archs[arch_index]
     ops = {
         "input": 0,
         "nor_conv_1x1": 1,
@@ -46,31 +45,22 @@ def info2mat(arch_index, dataset):
         ]
     )
 
-    nodes = ["input"]
-    steps = info.arch_str.split("+")
-    steps_coding = ["0", "0", "1", "0", "1", "2"]
+    nodes = ['input']
+    steps = arch_str.split('+')
+    steps_coding = ['0', '0', '1', '0', '1', '2']
     cont = 0
     for step in steps:
-        step = step.strip("|").split("|")
+        step = step.strip('|').split('|')
         for node in step:
-            n, idx = node.split("~")  # n: operation, idx: previous node
+            n, idx = node.split('~') #n: operation, idx: previous node
             assert idx == steps_coding[cont]
             cont += 1
             nodes.append(n)
-    nodes.append("output")
+    nodes.append('output')
 
-    # node_mat = np.zeros([8, len(ops)]).astype(int)
+    node_mat =np.zeros([8, len(ops)]).astype(int)
     ops_idx = [ops[k] for k in nodes]
-    # node_mat[[0, 1, 2, 3, 4, 5, 6, 7], ops_idx] = 1
-
-    is_valid_op = np.array([k != "none" for k in nodes])
-    adj_mat = adj_mat[is_valid_op][:, is_valid_op]
-    adj_power = np.linalg.matrix_power(adj_mat + np.eye(adj_mat.shape[0]), 3)
-    is_valid_2 = np.logical_and(adj_power[0, :] != 0, adj_power[:, -1] != 0) 
-    is_valid_2[0] = True
-    is_valid_2[-1] = True
-    ops_idx = np.array(ops_idx)[is_valid_op][is_valid_2].tolist()
-    adj_mat = adj_mat[is_valid_2][:, is_valid_2]
+    node_mat[[0,1,2,3,4,5,6,7], ops_idx] = 1
 
     # For cifar10-valid with converged
     if dataset == "cifar10_valid_converged":
@@ -89,39 +79,7 @@ def info2mat(arch_index, dataset):
         }
     return cifar10_valid_converged
 
-    # For cifar100
-    if dataset == "cifar100":
-        valid_acc, val_acc_avg, time_cost, test_acc, test_acc_avg = train_and_eval(
-            arch_index, nepoch=199, dataname="cifar100", use_converged_LR=False
-        )
-        cifar100 = {
-            "test_accuracy": test_acc,
-            "test_accuracy_avg": test_acc_avg,
-            "validation_accuracy": valid_acc,
-            "validation_accuracy_avg": val_acc_avg,
-            "module_adjacency": adj_mat.tolist(),
-            # "module_operations": node_mat.tolist(),
-            "training_time": time_cost,
-        }
-    return cifar100
-
-    # For ImageNet16-120
-    if dataset == "ImageNet16_120":
-        valid_acc, val_acc_avg, time_cost, test_acc, test_acc_avg = train_and_eval(
-            arch_index, nepoch=199, dataname="ImageNet16-120", use_converged_LR=False
-        )
-        ImageNet16_120 = {
-            "test_accuracy": test_acc,
-            "test_accuracy_avg": test_acc_avg,
-            "validation_accuracy": valid_acc,
-            "validation_accuracy_avg": val_acc_avg,
-            "module_adjacency": adj_mat.tolist(),
-            # "module_operations": node_mat.tolist(),
-            "training_time": time_cost,
-        }
-    return ImageNet16_120
-
-
+    
 def train_and_eval(arch_index, nepoch=None, dataname=None, use_converged_LR=True):
     assert dataname != "cifar10", "Do not allow cifar10 dataset"
     if use_converged_LR and dataname == "cifar10-valid":

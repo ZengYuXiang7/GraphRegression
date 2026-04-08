@@ -12,18 +12,18 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=2023, help="random seed")
     parser.add_argument(
-        "--dataset", type=str, default="nasbench101", help="dataset type"
+        "--dataset", type=str, default="nasbench201", help="dataset type"
     )
     parser.add_argument(
         "--data_path",
         type=str,
-        default="./data/nasbench101/nasbench101.json",
+        default="./data/nasbench201/nasbench201.json",
         help="path of json file",
     )
     parser.add_argument(
         "--save_dir",
         type=str,
-        default="./data/nasbench101/",
+        default="./data/nasbench201/",
         help="path of generated pt files",
     )
     parser.add_argument(
@@ -245,13 +245,14 @@ def compute_node_degrees(adj: np.ndarray) -> tuple:
     return in_degree, out_degree
 
 
-def get_nasbench101_item(archs, i: int, enc_dim, embed_type):
+def get_nasbench101_item(archs, i: int, enc_dim, embed_type, verbose: bool = False):
     index = str(i)
     ops = archs[index]["module_operations"]
     adj = archs[index]["module_adjacency"]
     depth = len(ops)
     op_depth_raw = bfs_depth_from_start(adj)
-    code, rel_pos, code_depth, op_depth = tokenizer(
+    op_depth = [d if d >= 0 else 0 for d in op_depth_raw]
+    code, rel_pos, code_depth, _ = tokenizer(
         ops, adj, depth, op_depth_raw, enc_dim, embed_type
     )
     distance = compute_shortest_path_distance(np.array(adj))
@@ -282,14 +283,12 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
     index = str(i)
     ops = archs[index]["module_operations"]
     adj = archs[index]["module_adjacency"]
-    depth = len([op for op in ops if op != 5])  # `op == 5` indicates `none`
+    depth = len(ops)  # 统一为 8（input + 6 个中间节点 + output）
     op_depth_raw = bfs_depth_from_start(adj)
-    # code, rel_pos, code_depth, op_depth = tokenizer(
-        # ops, adj, depth, op_depth_raw, enc_dim, embed_type
-    # )
-    # print(op_depth_raw)
-    op_depth_raw = [d if d >= 0 else 0 for d in op_depth_raw]
-    op_depth = torch.tensor(op_depth_raw).to(torch.int8)
+    op_depth = [d if d >= 0 else 0 for d in op_depth_raw]
+    code, rel_pos, code_depth, code_op_depth = tokenizer(
+        ops, adj, depth, op_depth, enc_dim, embed_type
+    )
     distance = compute_shortest_path_distance(np.array(adj))
     in_degree, out_degree = compute_node_degrees(np.array(adj))
     adj_np = np.array(adj)
@@ -299,20 +298,19 @@ def get_nasbench201_item(archs, i: int, enc_dim, embed_type):
         "index": i,
         "adj": adj,
         "ops": ops,
-        "test_accuracy": archs[index]["test_accuracy"] * 0.01,
-        "test_accuracy_avg": archs[index]["test_accuracy_avg"] * 0.01,
-        "valid_accuracy": archs[index]["validation_accuracy"] * 0.01,
-        "valid_accuracy_avg": archs[index]["validation_accuracy_avg"] * 0.01,
-        # "code": code,
-        # "code_rel_pos": rel_pos,
-        # "code_depth": code_depth,
+        "validation_accuracy": archs[index]["validation_accuracy_avg"],
+        "test_accuracy": archs[index]["test_accuracy_avg"],
+        "code": code,
+        "code_rel_pos": rel_pos,
+        "code_depth": code_depth,
         "op_depth": op_depth,
-        "op_depth_raw": op_depth_raw,
         "distance": distance,
         "in_degree": in_degree,
         "out_degree": out_degree,
         "dir_pe_rw": dir_pe_rw,
         "dir_pe_ml": dir_pe_ml,
+        # "validation_accuracy": archs[index]["validation_accuracy"],
+        # "test_accuracy": archs[index]["test_accuracy"],
     }
 
 
@@ -324,131 +322,38 @@ def main():
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    if args.load_all:
-        with open(args.data_path) as f:
-            archs = json.load(f)
+    with open(args.data_path) as f:
+        archs = json.load(f)
 
-        id_list = list(range(0, len(archs)))
-        # random.shuffle(id_list)
+    id_list = list(range(0, len(archs)))
+    # random.shuffle(id_list)
 
-        data_columns = {}
-        for i in tqdm.trange(len(archs)):
-            if args.dataset == "nasbench101":
-                item = get_nasbench101_item(archs, i, args.enc_dim, args.embed_type)
-            elif args.dataset == "nasbench201":
-                item = get_nasbench201_item(archs, i, args.enc_dim, args.embed_type)
-
-            for key, value in item.items():
-                if key not in data_columns:
-                    data_columns[key] = []
-                data_columns[key].append(value)
-
-        all_file_path = os.path.join(
-            save_dir, f"all_{args.dataset}_{args.embed_type}.pt"
-        )
-        meta = {
-            "format": "split_fields_v1",
-            "fields": list(data_columns.keys()),
-            "length": len(archs),
-        }
-        torch.save(meta, _get_split_meta_path(all_file_path))
-        for field, values in data_columns.items():
-            torch.save(values, _get_split_field_path(all_file_path, field))
-
-    if not args.load_all:
+    data_columns = {}
+    for i in tqdm.trange(len(archs)):
         if args.dataset == "nasbench101":
-            torch.set_num_threads(1)
-            train_data = {}
-            test_data = {}
-            val_data = {}
-            with open(args.data_path) as f:
-                archs = json.load(f)
-            print(len(archs))
-            id_list = list(range(0, len(archs)))
-            # Split dataset following TNASP
-            if args.split_type == "TNASP":
-                random.shuffle(id_list)
-                train_list = id_list
-                l1 = int(len(archs) * args.n_percent)
-                lv = int(len(archs) * (args.n_percent + 0.0005))
-                l2 = int(len(archs) * (args.n_percent + 0.0005))  # val 0.05%
-
-            # Split dataset following GATES
-            if args.split_type == "GATES":
-                train_list = id_list[: int(len(archs) * 0.9)]
-                random.shuffle(train_list)
-                l1 = int(len(archs) * 0.9 * args.n_percent)
-                lv = int(len(archs) * (0.9 * args.n_percent + 0.0005))
-                l2 = int(len(archs) * 0.9)
-
-            for i in train_list[:l1]:
-                idx = len(train_data)
-                train_data[idx] = get_nasbench101_item(
-                    archs, i, args.enc_dim, args.embed_type
-                )
-            torch.save(train_data, os.path.join(save_dir, "train.pt"))
-
-            # for i in id_list[l1:l2]:
-            for i in train_list[l1:lv]:
-                idx = len(val_data)
-                val_data[idx] = get_nasbench101_item(
-                    archs, i, args.enc_dim, args.embed_type
-                )
-            torch.save(val_data, os.path.join(save_dir, "val.pt"))
-
-            for i in id_list[l2:]:
-                idx = len(test_data)
-                test_data[idx] = get_nasbench101_item(
-                    archs, i, args.enc_dim, args.embed_type
-                )
-            torch.save(test_data, os.path.join(save_dir, "test.pt"))
-
+            item = get_nasbench101_item(archs, i, args.enc_dim, args.embed_type)
         elif args.dataset == "nasbench201":
-            with open(args.data_path) as f:
-                archs = json.load(f)
-            print(len(archs))
-            id_list = list(range(0, len(archs)))
-            # Split dataset following TNASP
-            if args.split_type == "TNASP":
-                random.shuffle(id_list)
-                train_list = id_list
-                l1 = int(len(archs) * args.n_percent)
-                lv = int(len(archs) * args.n_percent) + 200
-                l2 = int(len(archs) * args.n_percent) + 200
+            item = get_nasbench201_item(archs, i, args.enc_dim, args.embed_type)
 
-            # Split dataset following GATES
-            if args.split_type == "GATES":
-                train_list = id_list[: int(len(archs) * 0.5)]
-                random.shuffle(train_list)
-                l1 = int(len(archs) * 0.5 * args.n_percent)
-                # lv = int(len(archs)*(0.9*args.n_percent + 0.0005))
-                l2 = int(len(archs) * 0.5)
+        for key, value in item.items():
+            if key not in data_columns:
+                data_columns[key] = []
+            data_columns[key].append(value)
 
-            train_data, test_data = {}, {}
-            for i in train_list[:l1]:
-                idx = len(train_data)
-                train_data[idx] = get_nasbench201_item(
-                    archs, i, args.enc_dim, args.embed_type
-                )
-            torch.save(train_data, os.path.join(save_dir, "train.pt"))
+    all_file_path = os.path.join(save_dir, f"all_{args.dataset}_{args.embed_type}.pt")
+    meta = {
+        "format": "split_fields_v1",
+        "fields": list(data_columns.keys()),
+        "length": len(archs),
+    }
+    torch.save(meta, _get_split_meta_path(all_file_path))
+    for field, values in data_columns.items():
+        torch.save(values, _get_split_field_path(all_file_path, field))
 
-            if args.split_type == "TNASP":
-                val_data = {}
-                for i in train_list[l1:lv]:
-                    print(i)
-                    idx = len(val_data)
-                    val_data[idx] = get_nasbench201_item(
-                        archs, i, args.enc_dim, args.embed_type
-                    )
-                torch.save(val_data, os.path.join(save_dir, "val.pt"))
-
-            for i in id_list[l2:]:
-                print(i)
-                idx = len(test_data)
-                test_data[idx] = get_nasbench201_item(
-                    archs, i, args.enc_dim, args.embed_type
-                )
-            torch.save(test_data, os.path.join(save_dir, "test.pt"))
+    print(f"\n{'='*60}")
+    print(f"数据生成完成!")
+    print(f"保存路径: {save_dir}")
+    print(f"{'='*60}\n")
 
 
 if __name__ == "__main__":
