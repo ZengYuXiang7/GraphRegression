@@ -204,8 +204,22 @@ def save_result(metrics, log_filename, config):
         "dataset": config.dataset,
         "model": config.model,
         **{k: metrics[k] for k in metrics},
-        **{f"{k}_mean": np.mean([v for v in metrics[k] if v is not None]) if any(v is not None for v in metrics[k]) else None for k in metrics},
-        **{f"{k}_std": np.std([v for v in metrics[k] if v is not None]) if any(v is not None for v in metrics[k]) else None for k in metrics},
+        **{
+            f"{k}_mean": (
+                np.mean([v for v in metrics[k] if v is not None])
+                if any(v is not None for v in metrics[k])
+                else None
+            )
+            for k in metrics
+        },
+        **{
+            f"{k}_std": (
+                np.std([v for v in metrics[k] if v is not None])
+                if any(v is not None for v in metrics[k])
+                else None
+            )
+            for k in metrics
+        },
     }
     with open(f"./results/metrics/{log_filename}.pkl", "wb") as f:
         pickle.dump(result, f)
