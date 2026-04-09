@@ -24,7 +24,6 @@ def parse_args():
     parser.add_argument("--parallel", action="store_true")
 
     # ======================== Network: Encoding ========================
-    parser.add_argument("--embed_type", type=str, default="onehot_op", help="nape|nerf|trans")
     parser.add_argument("--act_function", type=str, default="relu")
     parser.add_argument("--class_token", type=bool, default=True)
     parser.add_argument("--depth_embed", type=bool, default=True)
@@ -33,18 +32,21 @@ def parse_args():
     parser.add_argument("--in_chans", type=int, default=32)
 
     # ======================== Model (主要调参区) ========================
-    parser.add_argument("--d_model", type=int, default=150)
+    parser.add_argument("--d_model", type=int, default=180)
+    parser.add_argument("--gcn_layers", type=int, default=10)
+    parser.add_argument("--graph_readout", type=str, default="att")
+    parser.add_argument("--embed_type", type=str, default="onehot_op", help="nape|nerf|trans")
+    parser.add_argument("--graph_n_head", type=int, default=6)
+    
+    
     parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument("--gcn_layers", type=int, default=4)
     parser.add_argument("--pool_gnn_layers", type=int, default=2)
     parser.add_argument("--num_pooling", type=int, default=1)
     parser.add_argument("--pool_ratio", type=float, default=0.25)
-    parser.add_argument("--graph_readout", type=str, default="cls")
 
     # ======================== Network: Other ========================
     parser.add_argument("--graph_d_model", type=int, default=160)
     parser.add_argument("--graph_d_ff", type=int, default=640)
-    parser.add_argument("--graph_n_head", type=int, default=6)
     parser.add_argument("--depths", nargs="+", type=int, default=[12])
     parser.add_argument("--drop_path_rate", type=float, default=0.0)
     parser.add_argument("--tf_layers", type=int, default=3)

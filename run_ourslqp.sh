@@ -22,4 +22,5 @@ python "Experiment.py" \
     --patience $PATIENCE \
     --test_model_type resnet18 \
     --device "$DEVICE" \
-    --debug 0 --tqdm 1
+    --lambda_rank    0.0 \
+    --debug 0 --tqdm 1 --print_freq 1

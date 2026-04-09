@@ -26,18 +26,17 @@ class NARLoss(nn.Module):
 
     def forward(self, predict: Tensor, target: Tensor):
         loss_mse = self.loss_mse(predict, target) * self.lambda_mse
+        
+        # mse写成ratio_pred和ratio_true的MSE
+        # ratio_pred = predict / target
+        # ratio_true = torch.ones_like(target)
+        # loss_mse = self.loss_mse(ratio_pred, ratio_true) * self.lambda_mse
+ 
         loss_rank = self._rank_loss(predict, target) * self.lambda_rank
 
-        loss_consist = 0
-        if self.lambda_consist > 0:
-            source_pred, aug_pred = predict.chunk(2, 0)
-            loss_consist = (
-                self.loss_consist(source_pred, aug_pred) * self.lambda_consist
-            )
-        loss = loss_mse + loss_rank + loss_consist
+        loss = loss_mse + loss_rank
         return {
             "loss": loss,
             "loss_mse": loss_mse,
             "loss_rank": loss_rank,
-            "loss_consist": loss_consist,
         }

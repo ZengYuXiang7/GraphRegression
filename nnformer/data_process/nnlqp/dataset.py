@@ -8,8 +8,6 @@ from torch.utils.data import Dataset
 from .feature.graph_feature import extract_graph_feature
 
 
-
-
 def compute_rw_pe(A: np.ndarray, rw_steps: int = 3, pr: float = 0.05) -> np.ndarray:
     """
     方向性随机游走位置编码 (基于 Geisler et al., ICML 2023)
@@ -193,9 +191,10 @@ def compute_node_degrees(adj: np.ndarray) -> tuple:
     return in_degree, out_degree
 
 
-
 def get_torch_data(onnx_file, batch_size, cost_time, model):
-    adjacent, node_features, static_features = extract_graph_feature(onnx_file, batch_size)
+    adjacent, node_features, static_features = extract_graph_feature(
+        onnx_file, batch_size
+    )
     edge_index = torch.from_numpy(np.array(np.where(adjacent > 0))).type(torch.long)
     node_features = np.array(node_features, dtype=np.float32)
     x = torch.from_numpy(node_features).type(torch.float)
@@ -274,7 +273,6 @@ class GraphLatencyDataset(Dataset):
     def processed_file_names(self):
         return []
 
-
     def custom_process(self):
         with open(self.latency_file) as f:  # gt.txt
             for line in f.readlines():
@@ -302,22 +300,19 @@ class GraphLatencyDataset(Dataset):
                     )
                     graph_name = "{}_{}_{}".format(graph_id, batch_size, plt_id)
                     self.latency_ids.append((data_file, None, graph_name, plt_id))
-                    
+
                     # Example: speed_id=00428, plt_id=1, batch_size=1
                     # data_file: ../../dataset/unseen_structure/data/00428_1_data.pt
                     # graph_name: onnx/nnmeter_alexnet/nnmeter_alexnet_transform_0427.onnx_1_1
 
-                    if (
-                        (not self.override_data)
-                        and os.path.exists(data_file)
-                    ):
+                    if (not self.override_data) and os.path.exists(data_file):
                         continue
 
                     if len(self.latency_ids) % 1000 == 0:
                         print(len(self.latency_ids))
 
                     GG = onnx.load(onnx_file)
-                    data= get_torch_data(
+                    data = get_torch_data(
                         GG, batch_size, cost_time, self.config.model
                     )  # process onnx file，cose_time:latency
 

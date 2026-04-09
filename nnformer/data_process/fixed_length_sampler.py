@@ -45,11 +45,8 @@ class FixedLengthBatchSampler(Sampler):
             if self.dataset == "nnlqp":
                 length = self.data_source[i]["code_adj"].shape[0]
                 # length = len(self.data_source.data[i]["adj"])
-            elif self.dataset == "nasbench201" or "nasbench101":
-                #     if len(self.data_source[i]) == 2
-                #     else len(self.data_source[i]["ops"])
-                # )
-                length = len(self.data_source.data[i]["adj"])
+            elif self.dataset in ("nasbench201", "nasbench101"):
+                length = len(self.data_source.data[i]["ops"])
             if self.maxlen is not None and self.maxlen > 0 and length > self.maxlen:
                 continue
             length_map.setdefault(length, []).append(i)

@@ -31,8 +31,6 @@ def init_layers(args, logger):
     net = net.to(args.device)
     loss = loss.to(args.device)
 
-    # Model EMA
-
     return net, loss
 
 

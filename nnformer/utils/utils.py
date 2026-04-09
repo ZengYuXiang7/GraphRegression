@@ -96,7 +96,7 @@ def save_check_point(
     save_dir = path.rstrip("/")
     os.makedirs(save_dir, exist_ok=True)
     torch.save(state, os.path.join(save_dir, fileName))
-    
+
     if is_best:
         best_ckpt_path = os.path.join(save_dir, dataset + "_model_best.pth.tar")
         src = os.path.join(save_dir, fileName)

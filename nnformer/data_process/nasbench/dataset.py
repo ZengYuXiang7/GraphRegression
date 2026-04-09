@@ -223,24 +223,10 @@ class NasbenchDataset(Dataset):
         return keys
 
     def __getitem__(self, index):
-        if self.part == "train" and self.consistency > 0:
-            # data_0, data_1 = random.sample(self.data[index], 2)
-            data_0 = self.data[index][0]
-            data_1 = random.sample(self.data[index][1:], 1)[0]
-            if self.dataset == "nasbench101":
-                data_0, data_1 = self.preprocess_101(data_0), self.preprocess_101(
-                    data_1
-                )
-            elif self.dataset == "nasbench201":
-                data_0, data_1 = self.preprocess_201(data_0), self.preprocess_201(
-                    data_1
-                )
-            return data_0, data_1
-        else:
-            if self.dataset == "nasbench101":
-                return self.preprocess_101(self.data[index])
-            elif self.dataset == "nasbench201":
-                return self.preprocess_201(self.data[index])
+        if self.dataset == "nasbench101":
+            return self.preprocess_101(self.data[index])
+        elif self.dataset == "nasbench201":
+            return self.preprocess_201(self.data[index])
 
     def preprocess_101(self, data):
         ops = _to_tensor(data["ops"], torch.int32)
@@ -275,49 +261,36 @@ class NasbenchDataset(Dataset):
         return result
 
     def preprocess_201(self, data):
-        ops = torch.tensor(data["ops"], dtype=torch.int)
-        code_rel_pos = torch.tensor(data["adj"], dtype=torch.int)
-        val_acc_avg = _to_tensor([data["valid_accuracy_avg"]], torch.float32)
-        test_acc_avg = _to_tensor([data["test_accuracy_avg"]], torch.float32)
-        op_depth = _to_tensor(data["op_depth"], torch.float32)
-        in_degree = (
-            _to_tensor(data.get("in_degree"), torch.int64)
-            if "in_degree" in data
-            else None
-        )
-        out_degree = (
-            _to_tensor(data.get("out_degree"), torch.int64)
-            if "out_degree" in data
-            else None
-        )
-        distance = (
-            _to_tensor(data.get("distance"), torch.int64)
-            if "distance" in data
-            else None
-        )
+        ops = _to_tensor(data["ops"], torch.int32)
+        code = _to_tensor(data["code"], torch.float32)
+        code_rel_pos = _to_tensor(data["code_rel_pos"], torch.int32)
+        code_depth = _to_tensor(data["code_depth"], torch.float32)
+        val_acc_avg = _to_tensor([data["validation_accuracy"]], torch.float32) * 0.01
+        test_acc_avg = _to_tensor([data["test_accuracy"]], torch.float32) * 0.01
 
+        op_depth = _to_tensor(data["op_depth"], torch.float32)
+        in_degree = _to_tensor(data["in_degree"], torch.int64)
+        out_degree = _to_tensor(data["out_degree"], torch.int64)
+        distance = _to_tensor(data["distance"], torch.int64)
+        # print()
         result = {
             "ops": ops,
-            # "code": code,
-            # "code_rel_pos": code_rel_pos,
-            "adj": (code_rel_pos == 1).float(),
-            # "code_depth": code_depth,
+            "code": code,
+            "code_rel_pos": code_rel_pos,
+            "code_adj": (code_rel_pos == 1).float(),
+            "code_depth": code_depth,
             "val_acc_avg": val_acc_avg,
             "test_acc_avg": test_acc_avg,
             "op_depth": op_depth,
+            "in_degree": in_degree,
+            "out_degree": out_degree,
+            "distance": distance,
         }
 
-        if in_degree is not None:
-            result["in_degree"] = in_degree
-        if out_degree is not None:
-            result["out_degree"] = out_degree
-        if distance is not None:
-            result["distance"] = distance
         if "dir_pe_rw" in data:
             result["dir_pe_rw"] = _to_tensor(data["dir_pe_rw"], torch.float32)
         if "dir_pe_ml" in data:
             result["dir_pe_ml"] = _to_tensor(data["dir_pe_ml"], torch.float32)
-
         return result
 
     def __len__(self):

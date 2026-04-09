@@ -74,13 +74,15 @@ def train(config, logger):
     os.makedirs(config.save_path, exist_ok=True)
 
     # 打印train_loader的真实数据量长度
-    logger.info(f"train_loader 数据长度: {len(train_loader.dataset)} | batch_size: {config.batch_size} | 每个epoch步数: {len(train_loader.dataset) / config.batch_size}")
+    logger.info(
+        f"train_loader 数据长度: {len(train_loader.dataset)} | batch_size: {config.batch_size} | 每个epoch步数: {len(train_loader.dataset) / config.batch_size}"
+    )
     # 打印 n_batches
     logger.info(f"n_batches: {n_batches}")
-    
+
     # Optimizer
     optimizer, scheduler = init_optim(config, net, n_batches, config.warmup_step)
-    
+
     # Auto Resume
     start_epoch_idx = auto_load_model(config, net, optimizer, scheduler)
 
@@ -92,7 +94,8 @@ def train(config, logger):
     stop_training = False
     tau_history = []
     target_key = "val_acc_avg" if "nasbench" in config.dataset else "cost"
-    print(f"target_key: {target_key}")
+    use_mape_early_stop = config.dataset == "nnlqp"
+    print(f"target_key: {target_key}, use_mape_early_stop: {use_mape_early_stop}")
     train_start_time = time.time()
     epoch_iter = (
         trange(start_epoch_idx, config.epochs)
@@ -102,6 +105,7 @@ def train(config, logger):
     for epoch_idx in epoch_iter:
         metric = Metric()
         t0 = time.time()
+        acc = None
 
         net.train()
         for batch_idx, batch_data in enumerate(train_loader):
@@ -110,16 +114,9 @@ def train(config, logger):
 
             optimizer.zero_grad()
             if "nasbench" in config.dataset:
-                if config.lambda_consistency > 0:
-                    data_0, data_1 = batch_data
-                    batch_data = {
-                        key: torch.cat([data_0[key], data_1[key]], dim=0)
-                        for key in data_0.keys()
-                    }
                 for k, v in batch_data.items():
                     batch_data[k] = v.to(config.device)
                 gt = batch_data[target_key]
-
                 # 兼容仅返回预测值的旧模型，以及 (logits, aux_loss) 的 DiffPool 模型
                 out = net(batch_data, None)
                 if isinstance(out, tuple):
@@ -161,7 +158,11 @@ def train(config, logger):
         if (epoch_idx + 1) % config.test_freq == 0:
             acc, err, tau = infer(val_loader, net, config.dataset, config.device)
             display_tau = tau
-            if tau > best_tau:
+
+            # 根据数据集选择早停指标：nnlqp用MAPE(越小越好)，nasbench用KT(越大越好)
+            is_better = (acc < best_mape) if use_mape_early_stop else (tau > best_tau)
+
+            if is_better:
                 best_mape, best_error, best_tau = acc, err, tau
                 best_epoch = epoch_idx + 1
                 early_stop_counter = 0
@@ -178,10 +179,10 @@ def train(config, logger):
             elif config.patience > 0:
                 early_stop_counter += 1
                 if early_stop_counter >= config.patience:
+                    metric_name = "MAPE" if use_mape_early_stop else "KT"
+                    metric_value = acc if use_mape_early_stop else tau
                     logger.info(
-                        "Early stopping at epoch {} | Best KT:{:.5f} MAPE:{:.5f} ErrB:{:.5f}".format(
-                            epoch_idx + 1, best_tau, best_mape, best_error
-                        )
+                        f"Early stopping at epoch {epoch_idx + 1} | Best {metric_name}:{metric_value:.5f}"
                     )
                     stop_training = True
 
@@ -211,11 +212,18 @@ def train(config, logger):
                 if config.patience > 0
                 else "off"
             )
-            epoch_iter.set_postfix(
-                best=f"{best_tau:.5f}",
-                patience=patience_info,
-                KT=f"{display_tau:.5f}",
-            )
+            if use_mape_early_stop:
+                epoch_iter.set_postfix(
+                    best_mape=f"{best_mape:.4f}",
+                    patience=patience_info,
+                    MAPE=f"{acc:.4f}" if acc is not None else "N/A",
+                )
+            else:
+                epoch_iter.set_postfix(
+                    best_kt=f"{best_tau:.4f}",
+                    patience=patience_info,
+                    KT=f"{display_tau:.4f}",
+                )
         tau_history.append((epoch_idx + 1, float(display_tau)))
 
         if (epoch_idx + 1) % config.save_epoch_freq == 0:
@@ -233,13 +241,19 @@ def train(config, logger):
             break
     save_tau_curve(tau_history, config, logger)
     train_total_time = time.time() - train_start_time
-    logger.info(
-        f"Training Finished | Best KT {best_tau:.5f} | Best MAPE {best_mape:11.8f} | Best ErrB {best_error:11.8f}"
-    )
+    if use_mape_early_stop:
+        logger.info(
+            f"Training Finished | Best MAPE {best_mape:.8f} | Best KT {best_tau:.5f} | Best ErrB {best_error:.8f}"
+        )
+    else:
+        logger.info(
+            f"Training Finished | Best KT {best_tau:.5f} | Best MAPE {best_mape:.8f} | Best ErrB {best_error:.8f}"
+        )
     return {
         "best_epoch": best_epoch,
         "train_time_sec": train_total_time,
         "best_tau": best_tau,
+        "best_mape": best_mape,
     }
 
 
@@ -260,12 +274,11 @@ def infer(dataloader, net, dataset, device=None, isTest=False):
             else:
                 logits, aux_loss = out, 0.0
         elif dataset == "nnlqp":
-            codes, gt, sf = (
-                batch_data[0]["netcode"],
-                batch_data[0]["cost"],
-                batch_data[1],
-            )
-            out = net(None, None, codes.to(device), sf.to(device))
+            gt = batch_data[target_key]
+            if device != None:
+                for k, v in batch_data.items():
+                    batch_data[k] = v.to(device)
+            out = net(batch_data, None)
             if isinstance(out, tuple):
                 logits, aux_loss = out
             else:
@@ -318,7 +331,7 @@ def run_exp(runid, config):
     dataset_default_paths = {
         "nasbench101": "data/nasbench101/all_nasbench101.pt",
         "nasbench201": "data/nasbench201",
-        "nnlqp": "data/nnlqp/fpga",
+        "nnlqp": "data/nnlqp",
     }
     default_data_path = "data/nasbench101/all_nasbench101.pt"
     if args.data_path == default_data_path and args.dataset in dataset_default_paths:
@@ -369,14 +382,19 @@ def run_exp(runid, config):
 
     # 日志
     train_tau = train_stats.get("best_tau")
+    train_mape = train_stats.get("best_mape")
     if tau is not None:
         train_tau_str = f"TrainKT {train_tau:8.5f} | " if train_tau is not None else ""
+        train_mape_str = (
+            f"TrainMAPE {train_mape:8.5f} | " if train_mape is not None else ""
+        )
         logger.info(
-            f"[EVAL-best]  {train_tau_str}KT {tau:8.5f}, MAPE {acc:8.5f}, ErrBnd(0.01) {err:8.5f}"
+            f"[EVAL-best]  {train_tau_str}{train_mape_str}KT {tau:8.5f}, MAPE {acc:8.5f}, ErrBnd(0.01) {err:8.5f}"
         )
 
     return {
         "train_tau": train_tau,
+        "train_mape": train_mape,
         "Tau": tau,
         "MAPE": acc,
         "ErrBnd": err,

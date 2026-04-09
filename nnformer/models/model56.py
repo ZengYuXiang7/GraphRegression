@@ -451,14 +451,10 @@ class Net(nn.Module):
 
     def get_data(self, sample, static_feature):
         """从 sample 中提取模型所需的所有原始特征。"""
-        # 除了201，nnlqp，其他都用adj
-        if "201" in self.dataset or "nnlqp" in self.dataset:
-            adj_key = "adj"
-        else:
-            adj_key = "code_adj"
+        # nasbench201 和 nasbench101 都使用 code_adj
         return (
             sample["ops"],
-            sample[adj_key],
+            sample["code_adj"],
             sample["in_degree"],
             sample["out_degree"],
             sample["op_depth"],
@@ -472,29 +468,34 @@ class Net(nn.Module):
         将原始特征 one-hot 编码后投影到 d_model 维：
           [op_embed, in_degree_embed, out_degree_embed, depth_embed]
         """
-        if ops.dim() == 3:
+        # 打印输入形状（用于调试）
+        # print(f"[model56] ops: {ops.shape}, in_degree: {in_degree.shape}, "
+        #   f"out_degree: {out_degree.shape}, depth: {depth.shape}")
+
+        # 纯属是因为代码失误，多一个维度
+        if self.dataset == "nnlqp":
             ops = ops.squeeze(-1)
 
-        # depth: nasbench 用 one-hot，nnlqp 已预编码为 one-hot
-        if self.dataset == "nnlqp":
-            depth_enc = F.one_hot(
-                depth.long(), num_classes=self.NUM_DEPTH_NNLQP
-            ).float()
-        elif self.dataset == 'nasbench201':
-            depth_enc = F.one_hot(
-                depth.long(), num_classes=self.NUM_DEPTH_NASBENCH
-            ).float()
-        else:
-            depth_enc = depth.float()
+        # 先 one-hot，再 embed
+        ops_onehot = F.one_hot(ops.long(), num_classes=self.NUM_OPS).float()
+        in_deg_onehot = F.one_hot(in_degree.long(), num_classes=self.NUM_DEGREE).float()
+        out_deg_onehot = F.one_hot(
+            out_degree.long(), num_classes=self.NUM_DEGREE
+        ).float()
+        # 根据数据集自定义 depth 的 one-hot 编码方式
+        NUM_DEPTH = (
+            self.NUM_DEPTH_NNLQP if self.dataset == "nnlqp" else self.NUM_DEPTH_NASBENCH
+        )
+        depth_onehot = F.one_hot(depth.long(), num_classes=NUM_DEPTH).float()
 
-        ops_enc = self.op_embed(F.one_hot(ops.long(), num_classes=self.NUM_OPS).float())
-        in_enc = self.in_degree_embed(
-            F.one_hot(in_degree.long(), num_classes=self.NUM_DEGREE).float()
-        )
-        out_enc = self.out_degree_embed(
-            F.one_hot(out_degree.long(), num_classes=self.NUM_DEGREE).float()
-        )
-        dep_enc = self.depth_embed(depth_enc)
+        ops_enc = self.op_embed(ops_onehot)
+        in_enc = self.in_degree_embed(in_deg_onehot)
+        out_enc = self.out_degree_embed(out_deg_onehot)
+        dep_enc = self.depth_embed(depth_onehot)
+        # print("ops_enc shape:", ops_enc.shape)
+        # print("in_enc shape:", in_enc.shape)
+        # print("out_enc shape:", out_enc.shape)
+        # print("dep_enc shape:", dep_enc.shape)
 
         return self.embed_proj(torch.cat([ops_enc, in_enc, out_enc, dep_enc], dim=-1))
 
@@ -555,6 +556,6 @@ class Net(nn.Module):
 
         # 6. 图汇聚 + 预测
         graph_feat = self._readout(x)
-        predict = self.predictor(graph_feat)
+        predict = self.predictor(graph_feat) + 0.5
 
         return predict, aux_loss if self.use_aux_loss else 0

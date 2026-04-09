@@ -25,7 +25,6 @@ def init_dataset_NNLQP(
     train_model_types = model_types - test_model_types
     assert len(train_model_types) > 0
 
-
     train_set = GraphLatencyDataset(
         data_root,
         onnx_root,
@@ -65,7 +64,12 @@ def init_dataloader(args, logger):
                 runid=runid,
             )
             valset = NasbenchDataset(
-                logger, args.dataset, "val", args.data_path, args.percent, embed_type=args.embed_type,
+                logger,
+                args.dataset,
+                "val",
+                args.data_path,
+                args.percent,
+                embed_type=args.embed_type,
                 runid=runid,
             )
             train_sampler = FixedLengthBatchSampler(
@@ -120,7 +124,7 @@ def init_dataloader(args, logger):
             args.override_data,
             args.embed_type,
             args.finetuning,
-            args
+            args,
         )
         logger.info("Train model types: {}".format(trtypes))
         logger.info("Test model types: {}".format(tetypes))
